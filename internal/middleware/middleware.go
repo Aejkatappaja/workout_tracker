@@ -67,7 +67,6 @@ func (um *UserMiddleware) Authenticate(next http.Handler) http.Handler {
 
 		r = SetUser(r, user)
 		next.ServeHTTP(w, r)
-		return
 	})
 }
 

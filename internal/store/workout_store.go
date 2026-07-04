@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 type Workout struct {
@@ -42,12 +43,50 @@ type WorkoutStore interface {
 	GetWorkoutOwner(id int64) (int, error)
 }
 
+// insertWorkoutEntries inserts all entries in a single statement and assigns the
+// generated ids back onto the entries slice (RETURNING order matches VALUES order).
+func insertWorkoutEntries(tx *sql.Tx, workoutID int, entries []WorkoutEntry) error {
+	if len(entries) == 0 {
+		return nil
+	}
+
+	placeholders := make([]string, 0, len(entries))
+	args := make([]interface{}, 0, len(entries)*8)
+	for i, entry := range entries {
+		n := i * 8
+		placeholders = append(placeholders, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
+			n+1, n+2, n+3, n+4, n+5, n+6, n+7, n+8))
+		args = append(args, workoutID, entry.ExerciseName, entry.Sets, entry.Reps,
+			entry.DurationSeconds, entry.Weight, entry.Notes, entry.OrderIndex)
+	}
+
+	query := `
+	INSERT INTO workout_entries (workout_id, exercise_name, sets, reps, duration_seconds, weight, notes, order_index)
+	VALUES ` + strings.Join(placeholders, ", ") + `
+	RETURNING id`
+
+	rows, err := tx.Query(query, args...)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = rows.Close() }()
+
+	i := 0
+	for rows.Next() {
+		if err := rows.Scan(&entries[i].ID); err != nil {
+			return err
+		}
+		i++
+	}
+	return rows.Err()
+}
+
 func (pg *PostgresWorkoutStore) CreateWorkout(workout *Workout) (*Workout, error) {
 	tx, err := pg.db.Begin()
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	query := `
   INSERT INTO workouts (user_id, title, description, duration_minutes, calories_burned)
@@ -61,16 +100,8 @@ func (pg *PostgresWorkoutStore) CreateWorkout(workout *Workout) (*Workout, error
 	}
 
 	// we also need to insert the entries
-	for _, entry := range workout.Entries {
-		query := `
-    INSERT INTO workout_entries (workout_id, exercise_name, sets, reps, duration_seconds, weight, notes, order_index)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING id
-    `
-		err = tx.QueryRow(query, workout.ID, entry.ExerciseName, entry.Sets, entry.Reps, entry.DurationSeconds, entry.Weight, entry.Notes, entry.OrderIndex).Scan(&entry.ID)
-		if err != nil {
-			return nil, err
-		}
+	if err := insertWorkoutEntries(tx, workout.ID, workout.Entries); err != nil {
+		return nil, err
 	}
 
 	err = tx.Commit()
@@ -156,25 +187,8 @@ func (pg *PostgresWorkoutStore) UpdateWorkout(workout *Workout) error {
 		return err
 	}
 
-	for _, entry := range workout.Entries {
-		query := `
-    INSERT INTO workout_entries (workout_id, exercise_name, sets, reps, duration_seconds, weight, notes, order_index)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `
-
-		_, err := tx.Exec(query,
-			workout.ID,
-			entry.ExerciseName,
-			entry.Sets,
-			entry.Reps,
-			entry.DurationSeconds,
-			entry.Weight,
-			entry.Notes,
-			entry.OrderIndex,
-		)
-		if err != nil {
-			return err
-		}
+	if err := insertWorkoutEntries(tx, workout.ID, workout.Entries); err != nil {
+		return err
 	}
 
 	return tx.Commit()

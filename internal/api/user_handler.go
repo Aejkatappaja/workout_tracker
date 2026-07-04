@@ -54,8 +54,8 @@ func (h *UserHandler) validateRegisterRequest(req *registerUserRequest) error {
 		return errors.New("password is required")
 	}
 
-	if len(req.Password) < 6 {
-		return errors.New("password must be 6 characters minimum")
+	if len(req.Password) < 8 {
+		return errors.New("password must be 8 characters minimum")
 	}
 	return nil
 }

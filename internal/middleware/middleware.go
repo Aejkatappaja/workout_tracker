@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/aejkatappaja/project/internal/store"
-	"github.com/aejkatappaja/project/internal/tokens"
-	"github.com/aejkatappaja/project/internal/utils"
+	"github.com/Aejkatappaja/workout_tracker/internal/store"
+	"github.com/Aejkatappaja/workout_tracker/internal/tokens"
+	"github.com/Aejkatappaja/workout_tracker/internal/utils"
 )
 
 type UserMiddleware struct {
@@ -67,7 +67,6 @@ func (um *UserMiddleware) Authenticate(next http.Handler) http.Handler {
 
 		r = SetUser(r, user)
 		next.ServeHTTP(w, r)
-		return
 	})
 }
 

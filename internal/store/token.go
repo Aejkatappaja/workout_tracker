@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/aejkatappaja/project/internal/tokens"
+	"github.com/Aejkatappaja/workout_tracker/internal/tokens"
 )
 
 type PostgresTokenStore struct {
@@ -45,7 +45,7 @@ func (t *PostgresTokenStore) Insert(token *tokens.Token) error {
 func (t *PostgresTokenStore) DeleteAllTokensForUser(userID int, scope string) error {
 	query := `
 	DELETE FROM tokens
-	WHERE scope = $1 AND user_id = $base32
+	WHERE scope = $1 AND user_id = $2
 	`
 	_, err := t.db.Exec(query, scope, userID)
 	return err

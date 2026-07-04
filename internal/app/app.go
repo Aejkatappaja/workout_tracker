@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/aejkatappaja/project/internal/api"
-	"github.com/aejkatappaja/project/internal/middleware"
-	"github.com/aejkatappaja/project/internal/store"
-	"github.com/aejkatappaja/project/migrations"
+	"github.com/Aejkatappaja/workout_tracker/internal/api"
+	"github.com/Aejkatappaja/workout_tracker/internal/middleware"
+	"github.com/Aejkatappaja/workout_tracker/internal/store"
+	"github.com/Aejkatappaja/workout_tracker/migrations"
 )
 
 type Application struct {
@@ -58,5 +58,5 @@ func NewApplication() (*Application, error) {
 }
 
 func (a *Application) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Status is available!\n")
+	_, _ = fmt.Fprint(w, "Status is available!\n")
 }

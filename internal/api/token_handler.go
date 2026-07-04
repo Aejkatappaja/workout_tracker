@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aejkatappaja/project/internal/store"
-	"github.com/aejkatappaja/project/internal/tokens"
-	"github.com/aejkatappaja/project/internal/utils"
+	"github.com/Aejkatappaja/workout_tracker/internal/store"
+	"github.com/Aejkatappaja/workout_tracker/internal/tokens"
+	"github.com/Aejkatappaja/workout_tracker/internal/utils"
 )
 
 type TokenHandler struct {
@@ -42,9 +42,14 @@ func (h *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request)
 	// lets get the user
 
 	user, err := h.userStore.GetUserByUsername(req.Username)
-	if err != nil || user == nil {
+	if err != nil {
 		h.logger.Printf("ERROR: GetUserByUsername %v", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	if user == nil {
+		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "invalid credentials"})
 		return
 	}
 

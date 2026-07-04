@@ -119,7 +119,7 @@ func (s *PostgresUserStore) UpdateUser(user *User) error {
 	query := `
 	UPDATE users
 	SET username = $1, email = $2, bio = $3, updated_at = CURRENT_TIMESTAMP
-	WHERE is = $4
+	WHERE id = $4
 	RETURNING updated_at
 	`
 	result, err := s.db.Exec(query, user.Username, user.Email, user.Bio, user.ID)

@@ -142,7 +142,7 @@ func (pg *PostgresWorkoutStore) GetWorkoutByID(id int64) (*Workout, error) {
 		fmt.Printf("Error querying workout entries: %v\n", err)
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var entry WorkoutEntry
@@ -161,7 +161,7 @@ func (pg *PostgresWorkoutStore) UpdateWorkout(workout *Workout) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	query := `
   UPDATE workouts

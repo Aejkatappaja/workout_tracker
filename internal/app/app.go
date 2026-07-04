@@ -58,5 +58,5 @@ func NewApplication() (*Application, error) {
 }
 
 func (a *Application) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Status is available!\n")
+	_, _ = fmt.Fprint(w, "Status is available!\n")
 }

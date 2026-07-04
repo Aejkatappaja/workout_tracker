@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/aejkatappaja/project/internal/store"
-	"github.com/aejkatappaja/project/internal/utils"
+	"github.com/Aejkatappaja/workout_tracker/internal/store"
+	"github.com/Aejkatappaja/workout_tracker/internal/utils"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type registerUserRequest struct {
@@ -92,6 +93,11 @@ func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 
 	err = h.userStore.CreateUser(user)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			utils.WriteJSON(w, http.StatusConflict, utils.Envelope{"error": "username or email already taken"})
+			return
+		}
 		h.logger.Printf("ERROR: registering user %v", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
 		return

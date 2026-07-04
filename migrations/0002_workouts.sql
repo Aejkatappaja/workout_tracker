@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS workouts (
     id BIGSERIAL PRIMARY KEY,
-    -- user_id
+    user_id BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     duration_minutes INTEGER NOT NULL,

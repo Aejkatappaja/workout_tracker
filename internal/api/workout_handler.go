@@ -42,6 +42,22 @@ func (wh *WorkoutHandler) HandleGetWorkoutByID(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	if workout == nil {
+		utils.WriteJSON(w, http.StatusNotFound, utils.Envelope{"error": "workout does not exist"})
+		return
+	}
+
+	currentUser := middleware.GetUser(r)
+	if currentUser == nil || currentUser == store.AnonymousUser {
+		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "you must be logged in"})
+		return
+	}
+
+	if workout.UserID != currentUser.ID {
+		utils.WriteJSON(w, http.StatusForbidden, utils.Envelope{"error": "you are not authorized to view that workout"})
+		return
+	}
+
 	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"workout": workout})
 }
 

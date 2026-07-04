@@ -92,7 +92,7 @@ func (wh *WorkoutHandler) HandleUpdatedWorkoutByID(w http.ResponseWriter, r *htt
 	workoutID, err := utils.ReadIDParam(r)
 	if err != nil {
 		wh.logger.Printf("ERROR: ReadIDParam: %v", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "invalid workout update id"})
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid workout update id"})
 		return
 	}
 

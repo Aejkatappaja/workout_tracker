@@ -4,13 +4,19 @@ import (
 	"database/sql"
 	"fmt"
 	"io/fs"
+	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 )
 
 func Open() (*sql.DB, error) {
-	db, err := sql.Open("pgx", "host=localhost user=postgres password=postgres dbname=postgres port=5432 sslmode=disable")
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		dsn = "host=localhost user=postgres password=postgres dbname=postgres port=5432 sslmode=disable"
+	}
+
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("db:open %w", err)
 	}
@@ -25,7 +31,7 @@ func MigrateFS(db *sql.DB, migrationFS fs.FS, dir string) error {
 	defer func() {
 		goose.SetBaseFS(nil)
 	}()
-	
+
 	err := goose.SetDialect("postgres")
 	if err != nil {
 		return fmt.Errorf("migrate %w", err)

@@ -4,15 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
-	"github.com/aejkatappaja/project/internal/middleware"
-	"github.com/aejkatappaja/project/internal/store"
-	"github.com/aejkatappaja/project/internal/utils"
-	"github.com/go-chi/chi/v5"
+	"github.com/Aejkatappaja/workout_tracker/internal/middleware"
+	"github.com/Aejkatappaja/workout_tracker/internal/store"
+	"github.com/Aejkatappaja/workout_tracker/internal/utils"
 )
 
 type WorkoutHandler struct {
@@ -179,15 +176,10 @@ func (wh *WorkoutHandler) HandleUpdatedWorkoutByID(w http.ResponseWriter, r *htt
 }
 
 func (wh *WorkoutHandler) DeleteWorkout(w http.ResponseWriter, r *http.Request) {
-	paramsWorkdoutID := chi.URLParam(r, "id")
-	if paramsWorkdoutID == "" {
-		http.NotFound(w, r)
-		return
-	}
-
-	workoutID, err := strconv.ParseInt(paramsWorkdoutID, 10, 64)
+	workoutID, err := utils.ReadIDParam(r)
 	if err != nil {
-		http.NotFound(w, r)
+		wh.logger.Printf("ERROR: ReadIDParam: %v", err)
+		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid workout id"})
 		return
 	}
 
@@ -197,7 +189,7 @@ func (wh *WorkoutHandler) DeleteWorkout(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	workoutOwner, err := wh.workoutStore.GetWorkoutOwner(int64(workoutID))
+	workoutOwner, err := wh.workoutStore.GetWorkoutOwner(workoutID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			utils.WriteJSON(w, http.StatusNotFound, utils.Envelope{"error": "workout does not exist"})
@@ -214,17 +206,16 @@ func (wh *WorkoutHandler) DeleteWorkout(w http.ResponseWriter, r *http.Request) 
 	}
 
 	err = wh.workoutStore.DeleteWorkoutByID(workoutID)
-	if err == sql.ErrNoRows {
-		http.Error(w, "workout not found", http.StatusNotFound)
+	if errors.Is(err, sql.ErrNoRows) {
+		utils.WriteJSON(w, http.StatusNotFound, utils.Envelope{"error": "workout does not exist"})
 		return
 	}
 
 	if err != nil {
-		http.Error(w, "error deleting workour", http.StatusInternalServerError)
+		wh.logger.Printf("ERROR: DeleteWorkoutByID: %v", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-
-	fmt.Fprintf(w, "This is the workout id you just deleted %d\n", workoutID)
 }

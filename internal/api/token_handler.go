@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aejkatappaja/project/internal/store"
-	"github.com/aejkatappaja/project/internal/tokens"
-	"github.com/aejkatappaja/project/internal/utils"
+	"github.com/Aejkatappaja/workout_tracker/internal/store"
+	"github.com/Aejkatappaja/workout_tracker/internal/tokens"
+	"github.com/Aejkatappaja/workout_tracker/internal/utils"
 )
 
 type TokenHandler struct {

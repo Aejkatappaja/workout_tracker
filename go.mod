@@ -1,4 +1,4 @@
-module github.com/aejkatappaja/project
+module github.com/Aejkatappaja/workout_tracker
 
 go 1.24.5
 

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/aejkatappaja/project/internal/tokens"
+	"github.com/Aejkatappaja/workout_tracker/internal/tokens"
 )
 
 type PostgresTokenStore struct {

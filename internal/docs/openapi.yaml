@@ -1,0 +1,230 @@
+openapi: 3.1.0
+info:
+  title: Workout Tracker API
+  version: "1.0.0"
+  description: >
+    REST API for tracking workouts and exercises. Bearer token auth,
+    owner-scoped CRUD on workouts with exercise entries.
+
+servers:
+  - url: http://localhost:8080
+
+tags:
+  - name: Auth
+  - name: Workouts
+  - name: System
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    RegisterRequest:
+      type: object
+      properties:
+        username: { type: string, example: neo }
+        email: { type: string, format: email, example: neo@matrix.io }
+        password: { type: string, minLength: 8, example: whiterabbit }
+        bio: { type: string, example: "the one" }
+      required: [username, email, password]
+
+    LoginRequest:
+      type: object
+      properties:
+        username: { type: string, example: neo }
+        password: { type: string, example: whiterabbit }
+      required: [username, password]
+
+    User:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        username: { type: string, example: neo }
+        email: { type: string, example: neo@matrix.io }
+        bio: { type: string }
+
+    Token:
+      type: object
+      properties:
+        token: { type: string, example: "AB3C..." }
+        expiry: { type: string, format: date-time }
+
+    WorkoutEntry:
+      type: object
+      description: Each entry tracks either reps or duration, not both.
+      properties:
+        id: { type: integer, readOnly: true }
+        exercise_name: { type: string, example: bench press }
+        sets: { type: integer, example: 3 }
+        reps: { type: [integer, "null"], example: 10 }
+        duration_seconds: { type: [integer, "null"], example: null }
+        weight: { type: [number, "null"], example: 135.5 }
+        notes: { type: string, example: warmup }
+        order_index: { type: integer, example: 1 }
+      required: [exercise_name, sets, order_index]
+
+    Workout:
+      type: object
+      properties:
+        id: { type: integer, readOnly: true }
+        user_id: { type: integer, readOnly: true }
+        title: { type: string, example: push day }
+        description: { type: string, example: upper body }
+        duration_minutes: { type: integer, example: 60 }
+        calories_burned: { type: integer, example: 200 }
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/WorkoutEntry" }
+      required: [title, duration_minutes]
+
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      responses:
+        "200":
+          description: Service is available
+          content:
+            text/plain:
+              schema: { type: string, example: "Status is available!" }
+
+  /users:
+    post:
+      tags: [Auth]
+      summary: Register a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+        "400":
+          description: Invalid input (missing field, bad email, password < 8)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "409":
+          description: Username or email already taken
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /tokens/authentication:
+    post:
+      tags: [Auth]
+      summary: Log in and get a bearer token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "201":
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  auth_token: { $ref: "#/components/schemas/Token" }
+        "401":
+          description: Invalid credentials (also returned for an unknown username)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /workouts:
+    post:
+      tags: [Workouts]
+      summary: Create a workout
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Workout" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workout: { $ref: "#/components/schemas/Workout" }
+        "400": { description: Invalid request body }
+        "401": { description: Missing or invalid token }
+
+  /workouts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Workouts]
+      summary: Get a workout by id
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workout: { $ref: "#/components/schemas/Workout" }
+        "400": { description: Non-numeric id }
+        "401": { description: Missing or invalid token }
+        "403": { description: Not the owner of this workout }
+        "404": { description: Workout does not exist }
+    put:
+      tags: [Workouts]
+      summary: Update a workout
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Workout" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workout: { $ref: "#/components/schemas/Workout" }
+        "400": { description: Non-numeric id or invalid body }
+        "401": { description: Missing or invalid token }
+        "403": { description: Not the owner of this workout }
+        "404": { description: Workout does not exist }
+    delete:
+      tags: [Workouts]
+      summary: Delete a workout
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204": { description: Deleted, no content }
+        "400": { description: Non-numeric id }
+        "401": { description: Missing or invalid token }
+        "403": { description: Not the owner of this workout }
+        "404": { description: Workout does not exist }

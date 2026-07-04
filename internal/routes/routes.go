@@ -3,6 +3,7 @@ package routes
 
 import (
 	"github.com/Aejkatappaja/workout_tracker/internal/app"
+	"github.com/Aejkatappaja/workout_tracker/internal/docs"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -19,6 +20,9 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 	})
 
 	r.Get("/health", app.HealthCheck)
+
+	r.Get("/docs", docs.UI)
+	r.Get("/openapi.yaml", docs.Spec)
 
 	r.Post("/users", app.UserHandler.HandleRegisterUser)
 	r.Post("/tokens/authentication", app.TokenHandler.HandleCreateToken)

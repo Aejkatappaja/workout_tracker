@@ -13,6 +13,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 	r.Group(func(r chi.Router) {
 		r.Use(app.MiddleWare.Authenticate)
 
+		r.Get("/workouts", app.MiddleWare.RequireUser(app.WorkoutHandler.HandleListWorkouts))
 		r.Get("/workouts/{id}", app.MiddleWare.RequireUser(app.WorkoutHandler.HandleGetWorkoutByID))
 		r.Post("/workouts", app.MiddleWare.RequireUser(app.WorkoutHandler.HandleCreateWorkout))
 		r.Put("/workouts/{id}", app.MiddleWare.RequireUser(app.WorkoutHandler.HandleUpdatedWorkoutByID))

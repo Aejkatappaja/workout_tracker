@@ -76,6 +76,16 @@ func (f *fakeWorkoutStore) DeleteWorkoutByID(id int64) error {
 	return nil
 }
 
+func (f *fakeWorkoutStore) ListWorkoutsByUser(userID int) ([]store.Workout, error) {
+	out := []store.Workout{}
+	for _, w := range f.workouts {
+		if w.UserID == userID {
+			out = append(out, *w)
+		}
+	}
+	return out, nil
+}
+
 func (f *fakeWorkoutStore) GetWorkoutOwner(id int64) (int, error) {
 	w, ok := f.workouts[id]
 	if !ok {

@@ -76,6 +76,13 @@ HTTP 201
 [Captures]
 wid: jsonpath "$.workout.id"
 
+# List my workouts -> 200, contains the one just created
+GET http://localhost:8080/workouts
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.workouts" count >= 1
+
 # Owner reads it back -> 200
 GET http://localhost:8080/workouts/{{wid}}
 Authorization: Bearer {{token}}

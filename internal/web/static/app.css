@@ -266,7 +266,7 @@
     border-color: color-mix(in srgb, var(--rose) 60%, transparent);
   }
   input[aria-invalid]:focus, .invalid input:focus { border-color: var(--rose); outline-color: var(--rose); }
-  .auth { max-width: 420px; margin: 40px auto 0; display: flex; flex-direction: column; gap: 18px; }
+  .auth { width: 100%; max-width: 420px; margin: 40px auto 0; display: flex; flex-direction: column; gap: 18px; }
   .auth-form { display: flex; flex-direction: column; gap: 14px; }
   /* show/hide password toggle */
   .pw-wrap { position: relative; display: flex; }

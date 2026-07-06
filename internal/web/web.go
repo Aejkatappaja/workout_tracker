@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Aejkatappaja/go-gym/internal/mail"
 	"github.com/Aejkatappaja/go-gym/internal/store"
 )
 
@@ -43,10 +44,11 @@ type Handler struct {
 	tokens   store.TokenStore
 	workouts store.WorkoutStore
 	logger   *log.Logger
+	mailer   mail.Mailer
 }
 
-func NewHandler(users store.UserStore, tokenStore store.TokenStore, workouts store.WorkoutStore, logger *log.Logger) *Handler {
-	return &Handler{users: users, tokens: tokenStore, workouts: workouts, logger: logger}
+func NewHandler(users store.UserStore, tokenStore store.TokenStore, workouts store.WorkoutStore, logger *log.Logger, mailer mail.Mailer) *Handler {
+	return &Handler{users: users, tokens: tokenStore, workouts: workouts, logger: logger, mailer: mailer}
 }
 
 // Static serves the embedded css/js under /static/ with caching headers.

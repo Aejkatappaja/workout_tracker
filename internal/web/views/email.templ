@@ -1,0 +1,62 @@
+package views
+
+// Transactional email templates. Email clients strip <style>/classes and don't
+// support CSS custom properties, so the Sora palette is inlined as hex on a
+// table layout: bg #0e1018, card #171a22, border #2a2f3c, text #c9cfd9 /
+// #e8ebf1, muted #8b93a3, accents cyan #80c8e0 and gold #d4b878.
+
+templ emailFrame(preheader string) {
+	<div style="display:none;max-height:0;overflow:hidden;opacity:0">{ preheader }</div>
+	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0e1018;margin:0;padding:24px 0;font-family:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace">
+		<tr>
+			<td align="center">
+				<table role="presentation" width="480" cellpadding="0" cellspacing="0" style="width:480px;max-width:92%;background:#171a22;border:1px solid #2a2f3c;border-radius:8px">
+					<tr>
+						<td style="padding:26px 28px">
+							<div style="font-size:18px;font-weight:700;color:#d4b878;letter-spacing:-0.5px;padding-bottom:18px">~<span style="color:#80c8e0">/</span>go-gym</div>
+							{ children... }
+						</td>
+					</tr>
+				</table>
+				<div style="color:#8b93a3;font-size:11px;padding:16px 0">go-gym · a training log</div>
+			</td>
+		</tr>
+	</table>
+}
+
+templ emailButton(label, url string) {
+	<table role="presentation" cellpadding="0" cellspacing="0">
+		<tr>
+			<td style="border-radius:6px;background:#80c8e0">
+				<a href={ templ.SafeURL(url) } style="display:inline-block;padding:11px 22px;color:#0e1018;font-size:13px;font-weight:600;text-decoration:none;font-family:ui-monospace,'SF Mono',Menlo,monospace">{ label }</a>
+			</td>
+		</tr>
+	</table>
+}
+
+templ WelcomeEmail(username, appURL string) {
+	@emailFrame("Welcome to go-gym") {
+		<div style="color:#e8ebf1;font-size:16px;font-weight:600;padding-bottom:10px">welcome, { username }</div>
+		<div style="color:#c9cfd9;font-size:13.5px;line-height:1.7">
+			Your go-gym account is ready. Log your workouts as structured sets, track reps or duration, and watch your activity heatmap fill in over time.
+		</div>
+		<div style="padding-top:22px">
+			@emailButton("open go-gym", appURL)
+		</div>
+	}
+}
+
+templ ResetEmail(resetURL string) {
+	@emailFrame("Reset your go-gym password") {
+		<div style="color:#e8ebf1;font-size:16px;font-weight:600;padding-bottom:10px">reset your password</div>
+		<div style="color:#c9cfd9;font-size:13.5px;line-height:1.7">
+			Someone asked to reset the password for this go-gym account. Choose a new one with the button below. The link expires in 1 hour and can be used once.
+		</div>
+		<div style="padding-top:22px">
+			@emailButton("reset password", resetURL)
+		</div>
+		<div style="color:#8b93a3;font-size:12px;line-height:1.6;padding-top:18px">
+			If you didn't request this, you can ignore this email. Your password won't change.
+		</div>
+	}
+}

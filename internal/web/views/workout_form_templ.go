@@ -269,7 +269,7 @@ func EntryRow(e store.WorkoutEntry) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\"> <button class=\"btn danger\" type=\"button\" aria-label=\"remove\" onclick=\"this.closest('.entry-row').remove()\">✕</button></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\"> <button class=\"btn danger\" type=\"button\" aria-label=\"remove\" data-remove-entry>✕</button></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -1,0 +1,10 @@
+.git
+.github
+*_test.go
+README.md
+assets
+scripts
+*.hurl
+docker-compose.yml
+Dockerfile
+.dockerignore

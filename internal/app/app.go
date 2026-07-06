@@ -66,5 +66,11 @@ func NewApplication() (*Application, error) {
 }
 
 func (a *Application) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	if err := a.DB.PingContext(r.Context()); err != nil {
+		a.Logger.Printf("ERROR: health check DB ping: %v", err)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = fmt.Fprint(w, "database unavailable\n")
+		return
+	}
 	_, _ = fmt.Fprint(w, "Status is available!\n")
 }

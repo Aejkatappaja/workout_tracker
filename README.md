@@ -90,6 +90,17 @@ Editing `.templ` views requires regenerating the Go (the generated files are com
 go tool templ generate
 ```
 
+## Deploy
+
+The app compiles to a single static binary with assets, migrations and templates embedded, so the container image is tiny and self-contained. Migrations run and the read-only demo seeds on startup, so a fresh database is usable immediately.
+
+```bash
+docker build -t go-gym .
+docker run -p 8080:8080 -e DATABASE_URL="postgres://user:pass@host:5432/db?sslmode=require" go-gym
+```
+
+The same Dockerfile runs on any container PaaS (Northflank, Render, Railway, Fly, Koyeb) paired with any managed Postgres (the platform's addon, Neon, Supabase). `-port` / `PORT` and `DATABASE_URL` are the only knobs; migrations and the demo seed on first boot. Graceful shutdown handles `SIGTERM`, and `/health` reports readiness by pinging the database. A [`fly.toml`](fly.toml) is included as a ready example for [Fly.io](https://fly.io).
+
 ## Examples
 
 ### curl (JSON API)

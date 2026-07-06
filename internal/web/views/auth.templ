@@ -18,7 +18,10 @@ templ LoginPage(errMsg string) {
 				</label>
 				<label>
 					<span>password</span>
-					<input name="password" type="password" autocomplete="current-password" required aria-invalid?={ errMsg != "" }/>
+					<div class="pw-wrap">
+						<input class="pw-input" name="password" type="password" autocomplete="current-password" required aria-invalid?={ errMsg != "" }/>
+						@PwToggle()
+					</div>
 				</label>
 				<button class="btn" type="submit"><span class="mn">❯</span> login</button>
 			</form>
@@ -27,6 +30,16 @@ templ LoginPage(errMsg string) {
 			<a class="btn demo-cta" href="/demo"><span class="mn">❯</span> explore the demo</a>
 		</main>
 	}
+}
+
+// PwToggle is the show/hide-password button placed inside a .pw-wrap next to a
+// .pw-input. app.js flips the input type and the aria-pressed state, which swaps
+// the eye / eye-off icon via CSS.
+templ PwToggle() {
+	<button type="button" class="pw-toggle" aria-label="show password" aria-pressed="false">
+		<svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+		<svg class="icon-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+	</button>
 }
 
 templ RegisterPage(errMsg string) {
@@ -52,7 +65,10 @@ templ RegisterPage(errMsg string) {
 				</label>
 				<label>
 					<span>password</span>
-					<input name="password" type="password" autocomplete="new-password" minlength="8" required aria-invalid?={ errMsg != "" }/>
+					<div class="pw-wrap">
+						<input class="pw-input" name="password" type="password" autocomplete="new-password" minlength="8" required aria-invalid?={ errMsg != "" }/>
+						@PwToggle()
+					</div>
 					<small class="hint">8 characters minimum</small>
 				</label>
 				<button class="btn" type="submit"><span class="mn">❯</span> create account</button>

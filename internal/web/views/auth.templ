@@ -10,6 +10,7 @@ templ LoginPage(errMsg string) {
 			if errMsg != "" {
 				<p class="form-error">{ errMsg }</p>
 			}
+			@GopherMascot()
 			<form class={ "card", "auth-form", templ.KV("invalid", errMsg != "") } method="post" action="/login">
 				<label>
 					<span>username</span>
@@ -38,6 +39,7 @@ templ RegisterPage(errMsg string) {
 			if errMsg != "" {
 				<p class="form-error">{ errMsg }</p>
 			}
+			@GopherMascot()
 			<form class={ "card", "auth-form", templ.KV("invalid", errMsg != "") } method="post" action="/register">
 				<label>
 					<span>username</span>

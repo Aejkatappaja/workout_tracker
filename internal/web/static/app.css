@@ -115,6 +115,26 @@
     background: var(--border);
   }
 
+  /* auth gopher mascot: head cropped just above the card (Go gopher by Renée French, CC-BY-3.0) */
+  .gopher-mascot {
+    display: flex;
+    justify-content: center;
+    width: 210px;
+    max-width: 64%;
+    margin: 0 auto -20px;
+  }
+  .g-svg { width: 100%; height: auto; overflow: hidden; }
+  .g-fur { fill: var(--cyan); }
+  .g-limb { fill: #F6D2A2; }
+  .g-pupil {
+    transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  /* arms are positioned by app.js (SVG transform attribute) so the raise/lower
+     tween can be interrupted and resumed from its current position on focus changes. */
+  @media (prefers-reduced-motion: reduce) {
+    .g-pupil { transition: none; }
+  }
+
   /* terminal-style topbar */
   .topbar {
     display: flex;

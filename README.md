@@ -6,6 +6,8 @@
 
 [![CI](https://github.com/Aejkatappaja/go-gym/actions/workflows/ci.yml/badge.svg)](https://github.com/Aejkatappaja/go-gym/actions/workflows/ci.yml)
 
+**Live demo:** [go-gym.aejkatappaja.com](https://go-gym.aejkatappaja.com). Hit "explore the demo" for a read-only seeded account.
+
 A training log built twice over one Go backend: a documented **JSON REST API** (bearer tokens) and a **server-rendered web UI** (templ + HTMX, cookie sessions). One set of stores, two consumers.
 
 ## Features

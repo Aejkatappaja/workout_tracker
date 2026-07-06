@@ -48,7 +48,7 @@ func (f *fakeTokenStore) DeleteAllTokensForUser(userID int, scope string) error 
 }
 
 func newTestHandler(users store.UserStore, toks store.TokenStore) *Handler {
-	return NewHandler(users, toks, log.New(io.Discard, "", 0))
+	return NewHandler(users, toks, nil, log.New(io.Discard, "", 0))
 }
 
 func formPost(target, body string) *http.Request {
@@ -96,7 +96,7 @@ func TestLogin(t *testing.T) {
 
 			assert.Equal(t, tt.wantStatus, rec.Code)
 			if tt.wantStatus == http.StatusSeeOther {
-				assert.Equal(t, "/", rec.Header().Get("Location"))
+				assert.Equal(t, "/app", rec.Header().Get("Location"))
 			}
 			c := sessionCookie(rec)
 			if tt.wantCookie {

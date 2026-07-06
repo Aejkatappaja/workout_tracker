@@ -213,4 +213,62 @@
   .hint { color: var(--comment); font-size: 11px; }
   .muted { color: var(--comment); font-size: 12.5px; }
   .muted a { color: var(--cyan); }
+
+  /* topbar */
+  .topbar .brand { color: var(--gold); font-size: 14px; }
+  .topbar .brand .slash { color: var(--cyan); }
+  .topbar .who { color: var(--sage); }
+  form.inline { display: inline; margin: 0; }
+
+  /* workout form */
+  .wform { display: flex; flex-direction: column; gap: 14px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .entries-editor { display: flex; flex-direction: column; gap: 10px; }
+  .entries-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  #entries-rows { display: flex; flex-direction: column; gap: 8px; }
+  .entry-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 2fr auto;
+    gap: 8px;
+    align-items: center;
+  }
+  .entry-row > * { min-width: 0; }
+  .entry-row input { width: 100%; }
+  .entry-row input:read-only { opacity: 0.35; cursor: not-allowed; }
+  @media (max-width: 640px) {
+    .row2 { grid-template-columns: 1fr; }
+    .entry-row { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* detail actions + entries table */
+  .actions { display: flex; gap: 8px; }
+  table.entries {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin-top: 8px;
+  }
+  table.entries th {
+    text-align: left;
+    color: var(--comment);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    padding: 6px 10px;
+  }
+  table.entries td {
+    color: var(--fg);
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+    padding: 6px 10px;
+  }
+  table.entries tbody tr:hover td { background: var(--bg-elev); }
+
+  /* dashboard intro */
+  .intro { color: var(--fg-dim); font-size: 13px; margin: 4px 0 8px; line-height: 1.6; }
+  .intro b { color: var(--fg-bright); font-weight: 500; }
 }

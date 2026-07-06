@@ -21,6 +21,17 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 
 		// web routes that need the authenticated user in context
 		r.Post("/logout", app.WebHandler.Logout)
+
+		// browser UI (server-rendered HTMX), redirects anonymous users to /login
+		r.Get("/", app.WebHandler.Root)
+		r.Get("/app", app.MiddleWare.RequireUserWeb(app.WebHandler.Dashboard))
+		r.Get("/app/workouts/new", app.MiddleWare.RequireUserWeb(app.WebHandler.NewForm))
+		r.Get("/app/workouts/entry-row", app.MiddleWare.RequireUserWeb(app.WebHandler.EntryRow))
+		r.Post("/app/workouts", app.MiddleWare.RequireUserWeb(app.WebHandler.Create))
+		r.Get("/app/workouts/{id}", app.MiddleWare.RequireUserWeb(app.WebHandler.Detail))
+		r.Get("/app/workouts/{id}/edit", app.MiddleWare.RequireUserWeb(app.WebHandler.EditForm))
+		r.Post("/app/workouts/{id}", app.MiddleWare.RequireUserWeb(app.WebHandler.Update))
+		r.Delete("/app/workouts/{id}", app.MiddleWare.RequireUserWeb(app.WebHandler.Delete))
 	})
 
 	r.Get("/health", app.HealthCheck)

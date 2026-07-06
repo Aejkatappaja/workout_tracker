@@ -1,0 +1,61 @@
+package views
+
+import "github.com/Aejkatappaja/workout_tracker/internal/store"
+
+// WorkoutForm renders the create/edit form. action is the hx-post target,
+// heading the terminal-style title.
+templ WorkoutForm(username string, wk store.Workout, errMsg, action, heading string) {
+	@AppLayout(username) {
+		<div class="sec-head">
+			<h1 class="title"><span class="p">$</span> { heading }</h1>
+			<a class="btn" href="/app">cancel</a>
+		</div>
+		if errMsg != "" {
+			<p class="form-error">{ errMsg }</p>
+		}
+		<form class="card wform" hx-post={ action } hx-target="body">
+			<label>
+				<span>title</span>
+				<input name="title" value={ wk.Title } required/>
+			</label>
+			<label>
+				<span>description</span>
+				<input name="description" value={ wk.Description }/>
+			</label>
+			<div class="row2">
+				<label>
+					<span>duration (min)</span>
+					<input name="duration_minutes" type="number" min="0" value={ zeroBlank(wk.DurationMinutes) }/>
+				</label>
+				<label>
+					<span>calories</span>
+					<input name="calories_burned" type="number" min="0" value={ zeroBlank(wk.CaloriesBurned) }/>
+				</label>
+			</div>
+			<div class="entries-editor">
+				<div class="entries-head">
+					<span class="muted">each exercise is rep-based (e.g. 3x10) or time-based (e.g. 60s), pick one</span>
+					<button class="btn" type="button" hx-get="/app/workouts/entry-row" hx-target="#entries-rows" hx-swap="beforeend"><span class="mn">+</span> add exercise</button>
+				</div>
+				<div id="entries-rows">
+					for _, e := range wk.Entries {
+						@EntryRow(e)
+					}
+				</div>
+			</div>
+			<button class="btn" type="submit"><span class="mn">❯</span> save</button>
+		</form>
+	}
+}
+
+templ EntryRow(e store.WorkoutEntry) {
+	<div class="entry-row">
+		<input name="entry_exercise" placeholder="exercise" value={ e.ExerciseName }/>
+		<input name="entry_sets" type="number" min="0" placeholder="sets" value={ zeroBlank(e.Sets) }/>
+		<input name="entry_reps" type="number" min="0" placeholder="reps" title="repetitions (rep-based exercise)" value={ optInt(e.Reps) }/>
+		<input name="entry_duration" type="number" min="0" placeholder="secs" title="duration in seconds (time-based exercise)" value={ optInt(e.DurationSeconds) }/>
+		<input name="entry_weight" type="number" step="0.01" min="0" placeholder="weight" value={ optFloat(e.Weight) }/>
+		<input name="entry_notes" placeholder="notes" value={ e.Notes }/>
+		<button class="btn danger" type="button" aria-label="remove" onclick="this.closest('.entry-row').remove()">✕</button>
+	</div>
+}

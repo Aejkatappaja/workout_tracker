@@ -1,0 +1,10 @@
+package views
+
+templ NotFound(username string) {
+	@AppLayout(username) {
+		<div class="sec-head">
+			<h1 class="title"><span class="p">$</span> cat: no such workout</h1>
+		</div>
+		<p class="muted">that workout does not exist, or is not yours. <a href="/app">back to dashboard</a>.</p>
+	}
+}

@@ -1,0 +1,40 @@
+package views
+
+import "github.com/Aejkatappaja/workout_tracker/internal/store"
+
+templ Dashboard(username string, workouts []store.Workout) {
+	@AppLayout(username) {
+		<div class="sec-head">
+			<h1 class="title"><span class="p">$</span> ls ~/workouts</h1>
+			<a class="btn" href="/app/workouts/new"><span class="mn">+</span> new workout</a>
+		</div>
+		<p class="intro">
+			Your training log. A <b>workout</b> is one session (push day, leg day) holding a list of
+			<b>exercises</b>, each either rep-based (bench 3x10) or time-based (plank 60s).
+		</p>
+		if len(workouts) == 0 {
+			<p class="muted">no workouts yet. <a href="/app/workouts/new">create your first</a>.</p>
+		} else {
+			<div class="list">
+				for _, wk := range workouts {
+					@WorkoutCard(wk)
+				}
+			</div>
+		}
+	}
+}
+
+templ WorkoutCard(wk store.Workout) {
+	<a class="tile" href={ templ.SafeURL(workoutPath(wk.ID)) }>
+		<h3 class="name"><span class="mn">#{ itoa(wk.ID) }</span> { wk.Title }</h3>
+		if wk.Description != "" {
+			<p class="desc">{ wk.Description }</p>
+		}
+		<ul class="chips">
+			<li class="chip">{ itoa(wk.DurationMinutes) } min</li>
+			if wk.CaloriesBurned > 0 {
+				<li class="chip">{ itoa(wk.CaloriesBurned) } kcal</li>
+			}
+		</ul>
+	</a>
+}

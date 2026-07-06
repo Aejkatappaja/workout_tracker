@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Workout Tracker API
+  title: GO-GYM
   version: "1.0.0"
   description: >
     REST API for tracking workouts and exercises. Bearer token auth,

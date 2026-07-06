@@ -1,0 +1,59 @@
+package views
+
+templ LoginPage(errMsg string) {
+	@Layout("login") {
+		<main class="auth" id="main">
+			<div class="sec-head">
+				<h1 class="title"><span class="p">$</span> ./login.sh</h1>
+				<span class="aside">workout tracker</span>
+			</div>
+			if errMsg != "" {
+				<p class="form-error">{ errMsg }</p>
+			}
+			<form class={ "card", "auth-form", templ.KV("invalid", errMsg != "") } method="post" action="/login">
+				<label>
+					<span>username</span>
+					<input name="username" autocomplete="username" autofocus required aria-invalid?={ errMsg != "" }/>
+				</label>
+				<label>
+					<span>password</span>
+					<input name="password" type="password" autocomplete="current-password" required aria-invalid?={ errMsg != "" }/>
+				</label>
+				<button class="btn" type="submit"><span class="mn">❯</span> login</button>
+			</form>
+			<p class="muted">no account? <a href="/register">register</a></p>
+		</main>
+	}
+}
+
+templ RegisterPage(errMsg string) {
+	@Layout("register") {
+		<main class="auth" id="main">
+			<div class="sec-head">
+				<h1 class="title"><span class="p">$</span> ./register.sh</h1>
+				<span class="aside">workout tracker</span>
+			</div>
+			if errMsg != "" {
+				<p class="form-error">{ errMsg }</p>
+			}
+			<form class={ "card", "auth-form", templ.KV("invalid", errMsg != "") } method="post" action="/register">
+				<label>
+					<span>username</span>
+					<input name="username" autocomplete="username" maxlength="50" autofocus required aria-invalid?={ errMsg != "" }/>
+					<small class="hint">1 to 50 characters</small>
+				</label>
+				<label>
+					<span>email</span>
+					<input name="email" type="email" autocomplete="email" required aria-invalid?={ errMsg != "" }/>
+				</label>
+				<label>
+					<span>password</span>
+					<input name="password" type="password" autocomplete="new-password" minlength="8" required aria-invalid?={ errMsg != "" }/>
+					<small class="hint">8 characters minimum</small>
+				</label>
+				<button class="btn" type="submit"><span class="mn">❯</span> create account</button>
+			</form>
+			<p class="muted">already registered? <a href="/login">login</a></p>
+		</main>
+	}
+}

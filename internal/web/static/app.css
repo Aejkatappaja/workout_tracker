@@ -1,0 +1,216 @@
+@layer reset, base, components;
+
+/* Sora palette (design tokens), ported from aejkatappaja.github.io */
+:root {
+  --bg: oklch(17.49% 0.0169 273.63);
+  --bg-float: oklch(15.51% 0.0133 270.44);
+  --bg-elev: oklch(20.19% 0.0163 273.89);
+  --bg-cursor: oklch(21.94% 0.0202 271.67);
+  --bg-sel: oklch(25.99% 0.0243 264.01);
+  --border: oklch(27.85% 0.0309 268.45);
+  --fg: oklch(85.63% 0.0238 264.44);
+  --fg-dim: oklch(71.73% 0.0312 264.36);
+  --fg-bright: oklch(91.63% 0.0185 258.35);
+  --comment: oklch(61.21% 0.0326 264.3);
+  --cyan: oklch(79.39% 0.0795 221.13);
+  --purple: oklch(73.92% 0.0814 297.48);
+  --sage: oklch(78.31% 0.0813 153.18);
+  --rose: oklch(71.97% 0.079 6.9);
+  --gold: oklch(79.24% 0.0884 86.78);
+  --steel: oklch(67.83% 0.0509 264.15);
+  --mono: "JetBrains Mono", "SF Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  --r: 4px;
+  --t: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@layer reset {
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+}
+
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1.55;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  a:hover { color: var(--cyan); }
+  ::selection { background: var(--bg-sel); color: var(--fg-bright); }
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation: none !important; transition: none !important; }
+  }
+}
+
+@layer components {
+  /* ambient glow blobs */
+  .glow {
+    position: fixed;
+    pointer-events: none;
+    z-index: 0;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.16;
+  }
+  .glow-1 { top: -180px; left: -120px; width: 460px; height: 460px; background: var(--cyan); }
+  .glow-2 { bottom: -200px; right: -160px; width: 540px; height: 540px; background: var(--purple); opacity: 0.12; }
+
+  .shell {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 32px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    min-height: 100vh;
+  }
+
+  /* terminal-style topbar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12.5px;
+    color: var(--comment);
+    padding-bottom: 12px;
+    position: relative;
+  }
+  .topbar .brand { color: var(--gold); }
+  .topbar .brand .slash { color: var(--cyan); }
+  .topbar nav { display: flex; gap: 16px; align-items: center; }
+
+  /* section header as a shell command */
+  .sec-head {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    color: var(--comment);
+    font-size: 12.5px;
+    padding-bottom: 12px;
+  }
+  .sec-head::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent,
+      color-mix(in srgb, var(--cyan) 55%, transparent) 18%,
+      color-mix(in srgb, var(--purple) 40%, transparent) 62%, transparent);
+  }
+  .sec-head .title { color: var(--fg-bright); margin: 0; font-size: 16px; font-weight: 500; }
+  .sec-head .title .p { color: var(--cyan); }
+  .sec-head .aside { color: var(--fg-dim); }
+
+  /* card surface (workouts, forms) with cyan hover glow */
+  .card, .tile {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 18px 20px;
+  }
+  .tile {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color var(--t), background var(--t), transform var(--t), box-shadow var(--t);
+  }
+  a.tile:hover, .tile.hoverable:hover {
+    border-color: var(--cyan);
+    background: var(--bg-cursor);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px -14px color-mix(in srgb, var(--cyan) 40%, transparent);
+  }
+  .tile .name { color: var(--fg-bright); font-size: 15px; font-weight: 500; margin: 0; }
+  .tile .name .mn { color: var(--cyan); margin-right: 6px; }
+  .tile .desc { color: var(--fg-dim); font-size: 12.5px; margin: 0; }
+
+  .list { display: grid; gap: 12px; }
+
+  /* chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
+  .chip {
+    font-size: 11px;
+    color: var(--steel);
+    background: var(--bg-float);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 2px 7px;
+  }
+
+  /* stat row */
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stat { flex: 1; min-width: 120px; }
+  .stat .n { color: var(--gold); font-size: 22px; font-variant-numeric: tabular-nums; }
+  .stat .l { color: var(--comment); font-size: 12px; }
+
+  /* buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 9px 16px;
+    color: var(--fg);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color var(--t), background var(--t), transform var(--t), color var(--t);
+  }
+  .btn .mn { color: var(--purple); }
+  .btn:hover {
+    border-color: var(--cyan);
+    background: var(--bg-cursor);
+    color: var(--fg-bright);
+    transform: translateY(-2px);
+  }
+  .btn.danger:hover { border-color: var(--rose); color: var(--rose); }
+
+  /* forms */
+  form label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--fg-dim); }
+  form label span { color: var(--comment); }
+  input, textarea, select {
+    font: inherit;
+    font-size: 13px;
+    color: var(--fg-bright);
+    background: var(--bg-float);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 8px 10px;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--cyan); outline: none; }
+  input[aria-invalid], .invalid input {
+    border-color: color-mix(in srgb, var(--rose) 60%, transparent);
+  }
+  input[aria-invalid]:focus, .invalid input:focus { border-color: var(--rose); outline-color: var(--rose); }
+  .auth { max-width: 420px; margin: 40px auto 0; display: flex; flex-direction: column; gap: 18px; }
+  .auth-form { display: flex; flex-direction: column; gap: 14px; }
+  .form-error {
+    color: var(--rose);
+    font-size: 12.5px;
+    border: 1px solid color-mix(in srgb, var(--rose) 40%, transparent);
+    border-radius: var(--r);
+    padding: 8px 12px;
+    margin: 0;
+  }
+  .hint { color: var(--comment); font-size: 11px; }
+  .muted { color: var(--comment); font-size: 12.5px; }
+  .muted a { color: var(--cyan); }
+}

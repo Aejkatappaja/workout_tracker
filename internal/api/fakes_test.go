@@ -86,6 +86,10 @@ func (f *fakeWorkoutStore) ListWorkoutsByUser(userID int) ([]store.Workout, erro
 	return out, nil
 }
 
+func (f *fakeWorkoutStore) WorkoutCountsByDay(userID int, since time.Time) (map[string]int, error) {
+	return map[string]int{}, nil
+}
+
 func (f *fakeWorkoutStore) GetWorkoutOwner(id int64) (int, error) {
 	w, ok := f.workouts[id]
 	if !ok {

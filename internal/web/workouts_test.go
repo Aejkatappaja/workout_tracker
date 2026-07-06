@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Aejkatappaja/go-gym/internal/middleware"
 	"github.com/Aejkatappaja/go-gym/internal/store"
@@ -36,6 +37,9 @@ func (f *fakeWorkoutStore) UpdateWorkout(*store.Workout) error              { re
 func (f *fakeWorkoutStore) DeleteWorkoutByID(id int64, userID int) error {
 	f.deletedID = id
 	return nil
+}
+func (f *fakeWorkoutStore) WorkoutCountsByDay(userID int, since time.Time) (map[string]int, error) {
+	return map[string]int{}, nil
 }
 func (f *fakeWorkoutStore) GetWorkoutOwner(id int64) (int, error) {
 	if wk := f.byID[id]; wk != nil {

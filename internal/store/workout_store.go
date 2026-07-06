@@ -145,7 +145,7 @@ func (pg *PostgresWorkoutStore) ListWorkoutsByUser(userID int) ([]Workout, error
 // day since the given date, keyed by "YYYY-MM-DD". Used to build the activity heatmap.
 func (pg *PostgresWorkoutStore) WorkoutCountsByDay(userID int, since time.Time) (map[string]int, error) {
 	query := `
-	SELECT to_char(created_at::date, 'YYYY-MM-DD') AS day, COUNT(*)
+	SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day, COUNT(*)
 	FROM workouts
 	WHERE user_id = $1 AND created_at >= $2
 	GROUP BY day

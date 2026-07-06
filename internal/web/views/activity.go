@@ -1,6 +1,10 @@
 package views
 
-import "time"
+import (
+	"time"
+
+	"github.com/Aejkatappaja/go-gym/internal/utils"
+)
 
 type Stats struct {
 	Sessions int
@@ -32,9 +36,10 @@ func BuildActivity(counts map[string]int, weeks int, today time.Time) Activity {
 		col := make([]ActivityDay, 7)
 		for d := 0; d < 7; d++ {
 			day := start.AddDate(0, 0, w*7+d)
-			c := counts[day.Format("2006-01-02")]
+			key := utils.DayKey(day)
+			c := counts[key]
 			total += c
-			col[d] = ActivityDay{Date: day.Format("2006-01-02"), Count: c, Level: level(c, day, end)}
+			col[d] = ActivityDay{Date: key, Count: c, Level: level(c, day, end)}
 		}
 		grid = append(grid, col)
 	}

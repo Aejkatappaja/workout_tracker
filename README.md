@@ -1,32 +1,38 @@
-# Workout Tracker API
+<p align="center">
+  <img src="assets/go-gym.svg" alt="Cartoon Go gophers lifting weights at the GO-GYM" width="460"/>
+</p>
+
+# Workout Tracker
 
 [![CI](https://github.com/Aejkatappaja/workout_tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Aejkatappaja/workout_tracker/actions/workflows/ci.yml)
 
-REST API in Go for tracking workouts and exercises. Bearer token auth, CRUD on workouts with exercise entries, PostgreSQL storage.
+A training log built twice over one Go backend: a documented **JSON REST API** (bearer tokens) and a **server-rendered web UI** (templ + HTMX, cookie sessions). One set of stores, two consumers.
 
 ## Features
 
-- **Token auth**: register, log in, get a bearer token (SHA-256 hashed at rest, scoped, expirable).
-- **Owner-scoped CRUD**: users only touch their own workouts; cross-user access returns `403` (no IDOR).
-- **Structured workouts**: each workout holds ordered exercise entries tracking either reps or duration (mutually exclusive, DB-enforced).
+- **Two front doors, one backend**: the same PostgreSQL stores serve a JSON API for programmatic clients and an HTMX web UI for the browser.
+- **Dual-transport auth**: one opaque token (SHA-256 hashed at rest, scoped, expirable) carried either as a `Bearer` header (API) or an `HttpOnly` session cookie (web).
+- **Owner-scoped by construction**: workouts are user-scoped down to the SQL (`WHERE id AND user_id`); cross-user access returns `403`/`404`, never leaks.
+- **Structured workouts**: each workout holds ordered exercises tracking either reps or duration, exactly one, enforced by a DB `CHECK` and surfaced as inline validation in the UI.
 - **Embedded migrations**: Goose migrations run automatically on startup.
-- **Interface-based stores**: handlers depend on store interfaces, making them unit-testable without a database.
+- **Interface-based stores**: handlers depend on store interfaces, so they unit-test without a database.
 - **Interactive docs**: OpenAPI 3.1 spec served with a Scalar UI at `/docs`.
-- **Tested and linted**: unit + integration tests, `go vet`, `gofmt` and `golangci-lint` enforced in CI.
+- **Tested and linted**: unit, integration and end-to-end tests; `go vet`, `gofmt`, `golangci-lint` and `templ` drift checks enforced in CI.
 
 ## Stack
 
-- **Go 1.24** with [Chi](https://github.com/go-chi/chi) router
-- **PostgreSQL** with [pgx](https://github.com/jackc/pgx) driver
-- **[Goose](https://github.com/pressly/goose)** for migrations (embedded, applied on startup)
+- **Go 1.25** with [Chi](https://github.com/go-chi/chi) router
+- **PostgreSQL** via [pgx](https://github.com/jackc/pgx), migrations by [Goose](https://github.com/pressly/goose)
+- **Web UI**: [templ](https://templ.guide) typed components + [HTMX](https://htmx.org), hand-written CSS, no build step (assets embedded)
 - **Docker Compose** for local dev (app DB + test DB)
 
-## API
+## JSON API
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
 | `POST` | `/users` | Public | Register |
 | `POST` | `/tokens/authentication` | Public | Login (returns a bearer token) |
+| `GET` | `/workouts` | Bearer | List the caller's workouts |
 | `GET` | `/workouts/{id}` | Bearer | Get a workout with its entries |
 | `POST` | `/workouts` | Bearer | Create a workout |
 | `PUT` | `/workouts/{id}` | Bearer | Update a workout |
@@ -35,44 +41,58 @@ REST API in Go for tracking workouts and exercises. Bearer token auth, CRUD on w
 | `GET` | `/docs` | Public | Interactive API docs (Scalar) |
 | `GET` | `/openapi.yaml` | Public | OpenAPI 3.1 spec |
 
-Workout routes are owner-scoped: a user can only read, update, or delete their own workouts (403 otherwise).
+Interactive docs with a "try it" console live at **http://localhost:8080/docs**.
 
-Interactive docs (Scalar, with a "try it" console) are served at **http://localhost:8080/docs**, backed by the OpenAPI spec at `/openapi.yaml`.
+## Web UI
+
+Server-rendered pages (cookie session) under `/`:
+
+- `/login`, `/register`, and logout wired to the same auth as the API.
+- `/app` dashboard listing your workouts.
+- `/app/workouts/new` and `/app/workouts/{id}/edit`: forms with add/remove exercise rows (HTMX), reps and duration locked mutually exclusive.
+- `/app/workouts/{id}`: detail with the exercise table, edit and delete.
 
 ## Data model
 
-Workouts contain exercise entries. Each entry tracks either **reps** or **duration**, mutually exclusive, enforced by a `CHECK` constraint.
-
 - `users` -> `tokens` (bearer, SHA-256 hashed, scoped, expirable)
-- `users` -> `workouts` -> `workout_entries` (sets, reps/duration, weight, order)
+- `users` -> `workouts` -> `workout_entries` (sets, reps or duration, weight, order)
+
+Each entry tracks **either reps or duration**, never both and never neither, enforced by a `CHECK` constraint.
 
 ## Run
 
 ```bash
 docker compose up -d   # app DB on :5432, test DB on :5433
-go run .                # migrations run on startup, server listens on :8080
+go run .               # migrations run on startup; API + web UI on :8080
 ```
+
+Then open **http://localhost:8080/register** for the UI, or hit the JSON API directly.
 
 Configuration:
 
 - `DATABASE_URL` overrides the connection string (defaults to the local Docker DB).
-- `-port` flag sets the listen port (defaults to `8080`).
+- `-port` sets the listen port (defaults to `8080`).
+
+Editing `.templ` views requires regenerating the Go (the generated files are committed):
+
+```bash
+go tool templ generate
+```
 
 ## Examples
 
-### curl
+### curl (JSON API)
 
 ```bash
-# 1. register
+# register
 curl -X POST localhost:8080/users \
   -d '{"username":"neo","email":"neo@matrix.io","password":"whiterabbit"}'
 
-# 2. login -> { "auth_token": { "token": "<TOKEN>", "expiry": ... } }
-#    capture the token straight into a shell variable
+# login -> capture the token
 TOKEN=$(curl -s -X POST localhost:8080/tokens/authentication \
   -d '{"username":"neo","password":"whiterabbit"}' | jq -r .auth_token.token)
 
-# 3. create a workout (owner is taken from the token, not the body)
+# create a workout (owner comes from the token, not the body)
 curl -X POST localhost:8080/workouts -H "Authorization: Bearer $TOKEN" -d '{
   "title": "push day",
   "duration_minutes": 60,
@@ -82,35 +102,22 @@ curl -X POST localhost:8080/workouts -H "Authorization: Bearer $TOKEN" -d '{
   ]
 }'
 
-# 4. read it back
-curl localhost:8080/workouts/1 -H "Authorization: Bearer $TOKEN"
-
-# a different user's token gets 403, a missing id gets 404, no token gets 401
+# a different user's token gets 403, a missing id 404, no token 401
 ```
 
-### Hurl files
+### End-to-end flows (Hurl)
 
 Runnable from the shell with [Hurl](https://hurl.dev):
 
-- [`api.hurl`](api.hurl) drives the JSON API: bearer token + workout id captured between requests,
-  every status asserted, including the `403` IDOR case.
-- [`web.hurl`](web.hurl) drives the browser UI end to end (cookie session + HTMX): anonymous
-  redirect, login, dashboard, create/detail/delete, inline validation, logout.
+- [`api.hurl`](api.hurl) drives the JSON API (bearer token + workout id captured between requests, every status asserted, including the `403` IDOR case).
+- [`web.hurl`](web.hurl) drives the browser UI end to end (cookie session + HTMX): anonymous redirect, login, dashboard, create/detail/delete, inline validation, logout.
 
 ```bash
 hurl --test api.hurl
 hurl --test web.hurl
 ```
 
-### Smoke test (curl only)
-
-No extra tooling: [`scripts/smoke.sh`](scripts/smoke.sh) drives the same flow with `curl` + `jq`
-and asserts every status code. Random credentials make it safe to re-run without a DB reset.
-
-```bash
-./scripts/smoke.sh                 # defaults to http://localhost:8080
-./scripts/smoke.sh http://host:port
-```
+[`scripts/smoke.sh`](scripts/smoke.sh) covers the API flow with just `curl` + `jq` (no extra tooling), using random credentials so it re-runs without a DB reset.
 
 ## Test
 
@@ -123,14 +130,15 @@ go test ./...
 
 ```
 internal/
-├── api/          # HTTP handlers
-├── app/          # App config, DI wiring
+├── api/          # JSON handlers
+├── app/          # config, DI wiring
 ├── docs/         # OpenAPI spec + Scalar UI
-├── middleware/   # Auth middleware (bearer token)
-├── routes/       # Route definitions
+├── middleware/   # auth (bearer header or session cookie)
+├── routes/       # route definitions
 ├── store/        # PostgreSQL repositories (interface-based)
-├── tokens/       # Token generation + hashing
-└── utils/        # Request/response helpers
+├── tokens/       # token generation + hashing
+├── utils/        # request/response helpers
+└── web/          # server-rendered HTMX UI (templ views, static assets)
 migrations/       # Goose SQL migrations
 scripts/          # smoke.sh end-to-end check
 api.hurl          # Hurl e2e for the JSON API

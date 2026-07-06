@@ -252,6 +252,31 @@ func TestGetWorkoutOwner(t *testing.T) {
 	assert.ErrorIs(t, err, sql.ErrNoRows)
 }
 
+func TestListWorkoutsByUser(t *testing.T) {
+	db := setupTestDB(t)
+	defer func() { _ = db.Close() }()
+
+	st := NewPostgresWorkoutStore(db)
+	userID := createTestUser(t, db)
+
+	// no workouts yet -> empty, non-nil slice
+	empty, err := st.ListWorkoutsByUser(userID)
+	require.NoError(t, err)
+	assert.Empty(t, empty)
+
+	for _, title := range []string{"push day", "pull day", "leg day"} {
+		_, err := st.CreateWorkout(&Workout{UserID: userID, Title: title, DurationMinutes: 60})
+		require.NoError(t, err)
+	}
+
+	got, err := st.ListWorkoutsByUser(userID)
+	require.NoError(t, err)
+	assert.Len(t, got, 3)
+	// ordered by id DESC (most recent first)
+	assert.Equal(t, "leg day", got[0].Title)
+	assert.Equal(t, userID, got[0].UserID)
+}
+
 func IntPtr(i int) *int {
 	return &i
 }

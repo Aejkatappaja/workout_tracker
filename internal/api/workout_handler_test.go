@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -41,6 +42,33 @@ func TestHandleGetWorkoutByID_Authorization(t *testing.T) {
 
 			assert.Equal(t, tt.wantStatus, rec.Code)
 		})
+	}
+}
+
+func TestHandleListWorkouts_OnlyOwn(t *testing.T) {
+	owner := &store.User{ID: 1}
+	other := &store.User{ID: 2}
+
+	fs := newFakeWorkoutStore()
+	fs.workouts[1] = &store.Workout{ID: 1, UserID: owner.ID, Title: "mine a"}
+	fs.workouts[2] = &store.Workout{ID: 2, UserID: owner.ID, Title: "mine b"}
+	fs.workouts[3] = &store.Workout{ID: 3, UserID: other.ID, Title: "not mine"}
+
+	h := NewWorkoutHandler(fs, discardLogger())
+
+	req := authedRequest(http.MethodGet, "/workouts", nil, "", owner)
+	rec := httptest.NewRecorder()
+	h.HandleListWorkouts(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var body struct {
+		Workouts []store.Workout `json:"workouts"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+	assert.Len(t, body.Workouts, 2)
+	for _, w := range body.Workouts {
+		assert.Equal(t, owner.ID, w.UserID)
 	}
 }
 

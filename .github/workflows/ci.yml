@@ -41,6 +41,17 @@ jobs:
             exit 1
           fi
 
+      - name: Check templ generate is up to date
+        run: |
+          go tool templ generate
+          # stage first so newly-added (untracked) generated files are caught too
+          git add -A
+          if ! git diff --cached --quiet -- '*_templ.go'; then
+            echo "templ generated files are out of date or uncommitted, run 'templ generate' and commit"
+            git --no-pager diff --cached -- '*_templ.go'
+            exit 1
+          fi
+
       - name: Vet
         run: go vet ./...
 

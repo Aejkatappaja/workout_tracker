@@ -88,14 +88,18 @@ curl localhost:8080/workouts/1 -H "Authorization: Bearer $TOKEN"
 # a different user's token gets 403, a missing id gets 404, no token gets 401
 ```
 
-### Hurl file
+### Hurl files
 
-[`api.hurl`](api.hurl) is the full request flow with assertions, runnable from the shell with
-[Hurl](https://hurl.dev). It captures the bearer token and workout id between requests and asserts
-every status, including the `403` IDOR case.
+Runnable from the shell with [Hurl](https://hurl.dev):
+
+- [`api.hurl`](api.hurl) drives the JSON API: bearer token + workout id captured between requests,
+  every status asserted, including the `403` IDOR case.
+- [`web.hurl`](web.hurl) drives the browser UI end to end (cookie session + HTMX): anonymous
+  redirect, login, dashboard, create/detail/delete, inline validation, logout.
 
 ```bash
 hurl --test api.hurl
+hurl --test web.hurl
 ```
 
 ### Smoke test (curl only)
@@ -129,5 +133,6 @@ internal/
 └── utils/        # Request/response helpers
 migrations/       # Goose SQL migrations
 scripts/          # smoke.sh end-to-end check
-api.hurl          # Hurl request flow with assertions
+api.hurl          # Hurl e2e for the JSON API
+web.hurl          # Hurl e2e for the browser UI (cookie + HTMX)
 ```

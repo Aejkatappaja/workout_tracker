@@ -100,7 +100,6 @@ func (pg *PostgresWorkoutStore) CreateWorkout(workout *Workout) (*Workout, error
 		return nil, err
 	}
 
-	// we also need to insert the entries
 	if err := insertWorkoutEntries(tx, workout.ID, workout.Entries); err != nil {
 		return nil, err
 	}
@@ -157,7 +156,6 @@ func (pg *PostgresWorkoutStore) GetWorkoutByID(id int64) (*Workout, error) {
 		return nil, err
 	}
 
-	// lets get the entries
 	entryQuery := `
 	SELECT ID, exercise_name, sets, reps, duration_seconds, weight, notes, order_index
 	FROM workout_entries

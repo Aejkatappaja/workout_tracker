@@ -122,8 +122,6 @@ func (wh *WorkoutHandler) HandleUpdatedWorkoutByID(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// at this point we can assume we are able to find an existing workout
-
 	var updateWorkoutRequest struct {
 		Title           *string              `json:"title"`
 		Description     *string              `json:"description"`

@@ -30,7 +30,7 @@ func SetUser(r *http.Request, user *store.User) *http.Request {
 func GetUser(r *http.Request) *store.User {
 	user, ok := r.Context().Value(UserContextKey).(*store.User)
 	if !ok {
-		panic("missing user in request") // bad actor call
+		panic("missing user in request")
 	}
 
 	return user
@@ -38,9 +38,6 @@ func GetUser(r *http.Request) *store.User {
 
 func (um *UserMiddleware) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// within this anonymouse function
-		// we can interject any incoming requests to our server
-
 		w.Header().Add("Vary", "Authorization")
 
 		// The bearer header wins (programmatic clients); the browser UI falls back

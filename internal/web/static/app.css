@@ -70,7 +70,7 @@
   .shell {
     position: relative;
     z-index: 1;
-    max-width: 900px;
+    max-width: 1080px;
     margin: 0 auto;
     padding: 28px 32px 80px;
     display: flex;
@@ -268,6 +268,27 @@
   input[aria-invalid]:focus, .invalid input:focus { border-color: var(--rose); outline-color: var(--rose); }
   .auth { max-width: 420px; margin: 40px auto 0; display: flex; flex-direction: column; gap: 18px; }
   .auth-form { display: flex; flex-direction: column; gap: 14px; }
+  /* show/hide password toggle */
+  .pw-wrap { position: relative; display: flex; }
+  .pw-wrap .pw-input { width: 100%; padding-right: 40px; }
+  .pw-toggle {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    background: none;
+    border: none;
+    padding: 6px;
+    color: var(--comment);
+    cursor: pointer;
+    transition: color var(--t);
+  }
+  .pw-toggle:hover { color: var(--cyan); }
+  .pw-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .pw-toggle .icon-off { display: none; }
+  .pw-toggle[aria-pressed="true"] .icon-eye { display: none; }
+  .pw-toggle[aria-pressed="true"] .icon-off { display: inline; }
   .form-error {
     color: var(--rose);
     font-size: 12.5px;
@@ -314,6 +335,12 @@
     .topbar nav { gap: 10px; }
     .topbar .who { display: none; }
     .badge-demo { font-size: 10px; padding: 2px 6px; }
+  }
+  /* tighter gutters on phones so content (incl. the auth card) uses more width */
+  @media (max-width: 520px) {
+    .shell { padding: 16px 18px 72px; gap: 24px; }
+    /* the auth card is the shell's only child here: center it vertically */
+    .auth { margin: auto; }
   }
 
   /* detail actions + entries table */

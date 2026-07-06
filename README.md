@@ -99,7 +99,7 @@ docker build -t go-gym .
 docker run -p 8080:8080 -e DATABASE_URL="postgres://user:pass@host:5432/db?sslmode=require" go-gym
 ```
 
-A [`fly.toml`](fly.toml) is included for [Fly.io](https://fly.io) (`fly launch`, attach a Postgres, `fly secrets set DATABASE_URL=...`); the same Dockerfile deploys on Render or Railway. `-port` / `PORT` and `DATABASE_URL` are the only knobs. Graceful shutdown handles `SIGTERM`, and `/health` reports readiness by pinging the database.
+The same Dockerfile runs on any container PaaS (Northflank, Render, Railway, Fly, Koyeb) paired with any managed Postgres (the platform's addon, Neon, Supabase). `-port` / `PORT` and `DATABASE_URL` are the only knobs; migrations and the demo seed on first boot. Graceful shutdown handles `SIGTERM`, and `/health` reports readiness by pinging the database. A [`fly.toml`](fly.toml) is included as a ready example for [Fly.io](https://fly.io).
 
 ## Examples
 

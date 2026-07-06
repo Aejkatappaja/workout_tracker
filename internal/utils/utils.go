@@ -5,11 +5,19 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Envelope map[string]interface{}
+
+// DayKey formats a moment as a civil date ("YYYY-MM-DD") in UTC. Go has no
+// date-only type, so keying on the UTC day keeps the counts query, the heatmap
+// grid and callers in agreement regardless of the server's local timezone.
+func DayKey(t time.Time) string {
+	return t.UTC().Format("2006-01-02")
+}
 
 func WriteJSON(w http.ResponseWriter, status int, data Envelope) {
 	js, err := json.MarshalIndent(data, "", " ")

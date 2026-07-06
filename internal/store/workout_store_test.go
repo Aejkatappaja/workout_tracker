@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Aejkatappaja/go-gym/internal/utils"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -311,7 +312,7 @@ func TestWorkoutCountsByDay(t *testing.T) {
 
 	counts, err := st.WorkoutCountsByDay(userID, time.Now().AddDate(0, 0, -7))
 	require.NoError(t, err)
-	assert.Equal(t, 3, counts[time.Now().Format("2006-01-02")], "3 workouts created today")
+	assert.Equal(t, 3, counts[utils.DayKey(time.Now())], "3 workouts created today")
 }
 
 func IntPtr(i int) *int {

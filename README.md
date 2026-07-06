@@ -59,6 +59,17 @@ Server-rendered pages (cookie session) under `/`:
 
 Each entry tracks **either reps or duration**, never both and never neither, enforced by a `CHECK` constraint.
 
+## Security
+
+- **Auth**: opaque bearer tokens (32 bytes from `crypto/rand`), stored only as a SHA-256 hash, scoped and expiring; passwords hashed with bcrypt (cost 12) and never serialized. The browser carries the same token in an `HttpOnly`, `SameSite=Lax`, `Secure` (over HTTPS) cookie.
+- **Authorization**: workouts are owner-scoped down to the SQL (`WHERE id AND user_id`), so cross-user access is impossible by construction, not just by a handler check.
+- **Input**: every query is parameterized; request bodies are capped at 1 MiB; exercise counts are bounded.
+- **Headers**: `Content-Security-Policy` (no inline scripts), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and HSTS over HTTPS.
+- **Abuse**: credential endpoints are rate-limited per IP; an unknown username on login still runs a bcrypt compare, so response time does not leak whether an account exists.
+- **CSRF**: state-changing requests rely on `SameSite=Lax` cookies; the JSON API authenticates with a bearer header, which a browser cannot send cross-site.
+
+In production, point `DATABASE_URL` at a connection string with `sslmode=require` (or `verify-full`) so database traffic is encrypted. The local Docker default uses `sslmode=disable`.
+
 ## Run
 
 ```bash
@@ -70,7 +81,7 @@ Then open **http://localhost:8080/register** for the UI, or hit the JSON API dir
 
 Configuration:
 
-- `DATABASE_URL` overrides the connection string (defaults to the local Docker DB).
+- `DATABASE_URL` overrides the connection string (defaults to the local Docker DB); use `sslmode=require` in production.
 - `-port` sets the listen port (defaults to `8080`).
 
 Editing `.templ` views requires regenerating the Go (the generated files are committed):

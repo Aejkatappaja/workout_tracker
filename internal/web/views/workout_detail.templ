@@ -4,6 +4,7 @@ import "github.com/Aejkatappaja/go-gym/internal/store"
 
 templ WorkoutDetail(username string, wk store.Workout, readOnly bool) {
 	@AppLayout(username, readOnly) {
+		<a class="back" href="/app"><span class="mn">❮</span> back</a>
 		<div class="sec-head">
 			<h1 class="title"><span class="p">$</span> cat { wk.Title }</h1>
 			if !readOnly {

@@ -14,6 +14,16 @@ type password struct {
 	hash      []byte
 }
 
+// dummyPasswordHash lets login spend a bcrypt comparison even when the user is
+// not found, so response time does not reveal whether a username exists.
+var dummyPasswordHash, _ = bcrypt.GenerateFromPassword([]byte("go-gym-timing-guard"), 12)
+
+// FakePasswordCompare burns ~one bcrypt comparison; call it on the
+// user-not-found branch of login to keep timing constant.
+func FakePasswordCompare() {
+	_ = bcrypt.CompareHashAndPassword(dummyPasswordHash, []byte("x"))
+}
+
 func (p *password) Set(plaintextPassword string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(plaintextPassword), 12)
 	if err != nil {

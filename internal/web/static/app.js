@@ -26,3 +26,12 @@ function syncAllRows() {
 document.addEventListener("DOMContentLoaded", syncAllRows);
 // re-sync after HTMX swaps in a fresh entry row
 document.body.addEventListener("htmx:afterSwap", syncAllRows);
+
+// remove an exercise row (delegated so it works for HTMX-added rows; no inline JS for CSP)
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest && e.target.closest("[data-remove-entry]");
+  if (btn) {
+    const row = btn.closest(".entry-row");
+    if (row) row.remove();
+  }
+});

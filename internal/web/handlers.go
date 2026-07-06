@@ -74,6 +74,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user == nil {
+		store.FakePasswordCompare() // keep timing constant for unknown usernames
 		h.render(w, r, http.StatusUnauthorized, views.LoginPage("invalid credentials"))
 		return
 	}

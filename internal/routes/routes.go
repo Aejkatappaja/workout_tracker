@@ -2,13 +2,38 @@
 package routes
 
 import (
+	"net"
+	"net/http"
+	"time"
+
 	"github.com/Aejkatappaja/go-gym/internal/app"
 	"github.com/Aejkatappaja/go-gym/internal/docs"
+	"github.com/Aejkatappaja/go-gym/internal/middleware"
 	"github.com/go-chi/chi/v5"
+	chimw "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate"
 )
+
+// ipKey rate-limits by client IP. RemoteAddr is resolved from X-Forwarded-For by
+// RealIP behind a trusted proxy, otherwise it is the direct peer.
+func ipKey(r *http.Request) (string, error) {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	return host, nil
+}
 
 func SetupRoutes(app *app.Application) *chi.Mux {
 	r := chi.NewRouter()
+
+	r.Use(chimw.RealIP, chimw.Recoverer)
+	r.Use(middleware.SecurityHeaders)
+	r.Use(middleware.BodyLimit(1 << 20)) // 1 MiB
+
+	// throttle credential endpoints against brute force / stuffing.
+	// keys off RemoteAddr, which RealIP resolves from X-Forwarded-For behind a trusted proxy.
+	authLimit := httprate.LimitBy(10, time.Minute, ipKey)
 
 	r.Group(func(r chi.Router) {
 		r.Use(app.MiddleWare.Authenticate)
@@ -39,16 +64,16 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 	r.Get("/docs", docs.UI)
 	r.Get("/openapi.yaml", docs.Spec)
 
-	r.Post("/users", app.UserHandler.HandleRegisterUser)
-	r.Post("/tokens/authentication", app.TokenHandler.HandleCreateToken)
+	r.With(authLimit).Post("/users", app.UserHandler.HandleRegisterUser)
+	r.With(authLimit).Post("/tokens/authentication", app.TokenHandler.HandleCreateToken)
 
 	// browser UI: static assets and public auth pages
 	r.Handle("/static/*", app.WebHandler.Static())
 	r.Get("/login", app.WebHandler.LoginPage)
-	r.Post("/login", app.WebHandler.Login)
-	r.Get("/demo", app.WebHandler.DemoLogin)
+	r.With(authLimit).Post("/login", app.WebHandler.Login)
+	r.With(authLimit).Get("/demo", app.WebHandler.DemoLogin)
 	r.Get("/register", app.WebHandler.RegisterPage)
-	r.Post("/register", app.WebHandler.Register)
+	r.With(authLimit).Post("/register", app.WebHandler.Register)
 
 	return r
 }

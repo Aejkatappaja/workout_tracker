@@ -47,6 +47,7 @@ func (h *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request)
 	}
 
 	if user == nil {
+		store.FakePasswordCompare() // keep timing constant for unknown usernames
 		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "invalid credentials"})
 		return
 	}

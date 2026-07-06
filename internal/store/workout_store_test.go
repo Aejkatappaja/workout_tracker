@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"testing"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/assert"
@@ -294,6 +295,23 @@ func TestListWorkoutsByUser(t *testing.T) {
 	// ordered by id DESC (most recent first)
 	assert.Equal(t, "leg day", got[0].Title)
 	assert.Equal(t, userID, got[0].UserID)
+}
+
+func TestWorkoutCountsByDay(t *testing.T) {
+	db := setupTestDB(t)
+	defer func() { _ = db.Close() }()
+
+	st := NewPostgresWorkoutStore(db)
+	userID := createTestUser(t, db)
+
+	for i := 0; i < 3; i++ {
+		_, err := st.CreateWorkout(&Workout{UserID: userID, Title: "w", DurationMinutes: 30})
+		require.NoError(t, err)
+	}
+
+	counts, err := st.WorkoutCountsByDay(userID, time.Now().AddDate(0, 0, -7))
+	require.NoError(t, err)
+	assert.Equal(t, 3, counts[time.Now().Format("2006-01-02")], "3 workouts created today")
 }
 
 func IntPtr(i int) *int {

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 )
 
 type Workout struct {
@@ -42,6 +43,7 @@ type WorkoutStore interface {
 	DeleteWorkoutByID(id int64, userID int) error
 	GetWorkoutOwner(id int64) (int, error)
 	ListWorkoutsByUser(userID int) ([]Workout, error)
+	WorkoutCountsByDay(userID int, since time.Time) (map[string]int, error)
 }
 
 // insertWorkoutEntries inserts all entries in a single statement and assigns the
@@ -137,6 +139,34 @@ func (pg *PostgresWorkoutStore) ListWorkoutsByUser(userID int) ([]Workout, error
 		workouts = append(workouts, w)
 	}
 	return workouts, rows.Err()
+}
+
+// WorkoutCountsByDay returns, for the user, the number of workouts created per
+// day since the given date, keyed by "YYYY-MM-DD". Used to build the activity heatmap.
+func (pg *PostgresWorkoutStore) WorkoutCountsByDay(userID int, since time.Time) (map[string]int, error) {
+	query := `
+	SELECT to_char(created_at::date, 'YYYY-MM-DD') AS day, COUNT(*)
+	FROM workouts
+	WHERE user_id = $1 AND created_at >= $2
+	GROUP BY day
+	`
+
+	rows, err := pg.db.Query(query, userID, since)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	counts := map[string]int{}
+	for rows.Next() {
+		var day string
+		var n int
+		if err := rows.Scan(&day, &n); err != nil {
+			return nil, err
+		}
+		counts[day] = n
+	}
+	return counts, rows.Err()
 }
 
 func (pg *PostgresWorkoutStore) GetWorkoutByID(id int64) (*Workout, error) {

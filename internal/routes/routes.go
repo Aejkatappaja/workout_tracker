@@ -2,8 +2,8 @@
 package routes
 
 import (
-	"github.com/Aejkatappaja/workout_tracker/internal/app"
-	"github.com/Aejkatappaja/workout_tracker/internal/docs"
+	"github.com/Aejkatappaja/go-gym/internal/app"
+	"github.com/Aejkatappaja/go-gym/internal/docs"
 	"github.com/go-chi/chi/v5"
 )
 

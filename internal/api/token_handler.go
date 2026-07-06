@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Aejkatappaja/workout_tracker/internal/store"
-	"github.com/Aejkatappaja/workout_tracker/internal/tokens"
-	"github.com/Aejkatappaja/workout_tracker/internal/utils"
+	"github.com/Aejkatappaja/go-gym/internal/store"
+	"github.com/Aejkatappaja/go-gym/internal/tokens"
+	"github.com/Aejkatappaja/go-gym/internal/utils"
 )
 
 type TokenHandler struct {

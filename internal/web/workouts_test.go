@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Aejkatappaja/workout_tracker/internal/middleware"
-	"github.com/Aejkatappaja/workout_tracker/internal/store"
+	"github.com/Aejkatappaja/go-gym/internal/middleware"
+	"github.com/Aejkatappaja/go-gym/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

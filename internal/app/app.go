@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Aejkatappaja/workout_tracker/internal/api"
-	"github.com/Aejkatappaja/workout_tracker/internal/middleware"
-	"github.com/Aejkatappaja/workout_tracker/internal/store"
-	"github.com/Aejkatappaja/workout_tracker/internal/web"
-	"github.com/Aejkatappaja/workout_tracker/migrations"
+	"github.com/Aejkatappaja/go-gym/internal/api"
+	"github.com/Aejkatappaja/go-gym/internal/middleware"
+	"github.com/Aejkatappaja/go-gym/internal/store"
+	"github.com/Aejkatappaja/go-gym/internal/web"
+	"github.com/Aejkatappaja/go-gym/migrations"
 )
 
 type Application struct {

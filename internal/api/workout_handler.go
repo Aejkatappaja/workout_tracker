@@ -7,9 +7,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Aejkatappaja/workout_tracker/internal/middleware"
-	"github.com/Aejkatappaja/workout_tracker/internal/store"
-	"github.com/Aejkatappaja/workout_tracker/internal/utils"
+	"github.com/Aejkatappaja/go-gym/internal/middleware"
+	"github.com/Aejkatappaja/go-gym/internal/store"
+	"github.com/Aejkatappaja/go-gym/internal/utils"
 )
 
 type WorkoutHandler struct {

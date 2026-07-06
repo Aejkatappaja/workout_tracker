@@ -2,9 +2,9 @@
   <img src="assets/go-gym.svg" alt="Cartoon Go gophers lifting weights at the GO-GYM" width="460"/>
 </p>
 
-# Workout Tracker
+# GO-GYM
 
-[![CI](https://github.com/Aejkatappaja/workout_tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Aejkatappaja/workout_tracker/actions/workflows/ci.yml)
+[![CI](https://github.com/Aejkatappaja/go-gym/actions/workflows/ci.yml/badge.svg)](https://github.com/Aejkatappaja/go-gym/actions/workflows/ci.yml)
 
 A training log built twice over one Go backend: a documented **JSON REST API** (bearer tokens) and a **server-rendered web UI** (templ + HTMX, cookie sessions). One set of stores, two consumers.
 

@@ -8,7 +8,7 @@ package views
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/Aejkatappaja/workout_tracker/internal/store"
+import "github.com/Aejkatappaja/go-gym/internal/store"
 
 func WorkoutDetail(username string, wk store.Workout) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {

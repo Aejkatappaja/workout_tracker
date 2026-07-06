@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Aejkatappaja/workout_tracker/internal/middleware"
-	"github.com/Aejkatappaja/workout_tracker/internal/store"
-	"github.com/Aejkatappaja/workout_tracker/internal/utils"
-	"github.com/Aejkatappaja/workout_tracker/internal/web/views"
+	"github.com/Aejkatappaja/go-gym/internal/middleware"
+	"github.com/Aejkatappaja/go-gym/internal/store"
+	"github.com/Aejkatappaja/go-gym/internal/utils"
+	"github.com/Aejkatappaja/go-gym/internal/web/views"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 

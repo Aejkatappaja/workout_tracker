@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Aejkatappaja/go-gym/internal/middleware"
 	"github.com/Aejkatappaja/go-gym/internal/store"
@@ -63,15 +64,34 @@ func (h *Handler) Root(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app", http.StatusSeeOther)
 }
 
+const activityWeeks = 16
+
 func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUser(r)
+
 	workouts, err := h.workouts.ListWorkoutsByUser(user.ID)
 	if err != nil {
-		h.logger.Printf("ERROR: web dashboard: %v", err)
+		h.logger.Printf("ERROR: web dashboard list: %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	h.render(w, r, http.StatusOK, views.Dashboard(user.Username, workouts))
+
+	since := time.Now().AddDate(0, 0, -activityWeeks*7)
+	counts, err := h.workouts.WorkoutCountsByDay(user.ID, since)
+	if err != nil {
+		h.logger.Printf("ERROR: web dashboard activity: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	stats := views.Stats{Sessions: len(workouts)}
+	for _, wk := range workouts {
+		stats.Minutes += wk.DurationMinutes
+		stats.Calories += wk.CaloriesBurned
+	}
+	activity := views.BuildActivity(counts, activityWeeks, time.Now())
+
+	h.render(w, r, http.StatusOK, views.Dashboard(user.Username, workouts, stats, activity))
 }
 
 // loadOwnedWorkout fetches a workout by the {id} param and checks ownership.

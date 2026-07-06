@@ -2,16 +2,27 @@ package views
 
 import "github.com/Aejkatappaja/go-gym/internal/store"
 
-templ Dashboard(username string, workouts []store.Workout) {
+templ Dashboard(username string, workouts []store.Workout, stats Stats, activity Activity) {
 	@AppLayout(username) {
 		<div class="sec-head">
 			<h1 class="title"><span class="p">$</span> ls ~/workouts</h1>
 			<a class="btn" href="/app/workouts/new"><span class="mn">+</span> new workout</a>
 		</div>
-		<p class="intro">
-			Your training log. A <b>workout</b> is one session (push day, leg day) holding a list of
-			<b>exercises</b>, each either rep-based (bench 3x10) or time-based (plank 60s).
-		</p>
+		<div class="stats">
+			<div class="stat card">
+				<span class="n">{ itoa(stats.Sessions) }</span>
+				<span class="l">sessions</span>
+			</div>
+			<div class="stat card">
+				<span class="n">{ itoa(stats.Minutes) }</span>
+				<span class="l">minutes</span>
+			</div>
+			<div class="stat card">
+				<span class="n">{ itoa(stats.Calories) }</span>
+				<span class="l">calories</span>
+			</div>
+		</div>
+		@activityHeatmap(activity)
 		if len(workouts) == 0 {
 			<p class="muted">no workouts yet. <a href="/app/workouts/new">create your first</a>.</p>
 		} else {
@@ -22,6 +33,36 @@ templ Dashboard(username string, workouts []store.Workout) {
 			</div>
 		}
 	}
+}
+
+templ activityHeatmap(a Activity) {
+	<div class="hm-wrap card">
+		<div class="hm-head">
+			<span class="muted">{ itoa(a.Total) } sessions in the last 16 weeks</span>
+			<div class="hm-legend">
+				<span>less</span>
+				<span class="hm-cell lvl-0"></span>
+				<span class="hm-cell lvl-1"></span>
+				<span class="hm-cell lvl-2"></span>
+				<span class="hm-cell lvl-3"></span>
+				<span class="hm-cell lvl-4"></span>
+				<span>more</span>
+			</div>
+		</div>
+		<div class="heatmap">
+			for _, week := range a.Weeks {
+				<div class="hm-col">
+					for _, day := range week {
+						if day.Level >= 0 {
+							<span class={ "hm-cell", "lvl-" + itoa(day.Level) } title={ day.Date + " · " + itoa(day.Count) }></span>
+						} else {
+							<span class="hm-cell hm-future"></span>
+						}
+					}
+				</div>
+			}
+		</div>
+	</div>
 }
 
 templ WorkoutCard(wk store.Workout) {

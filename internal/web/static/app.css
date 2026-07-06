@@ -79,6 +79,8 @@
     min-height: 100vh;
   }
 
+  .app-main { display: flex; flex-direction: column; gap: 18px; }
+
   /* terminal-style topbar */
   .topbar {
     display: flex;
@@ -271,4 +273,18 @@
   /* dashboard intro */
   .intro { color: var(--fg-dim); font-size: 13px; margin: 4px 0 8px; line-height: 1.6; }
   .intro b { color: var(--fg-bright); font-weight: 500; }
+
+  /* activity heatmap */
+  .hm-wrap { display: flex; flex-direction: column; gap: 10px; overflow-x: auto; }
+  .hm-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .hm-legend { display: flex; align-items: center; gap: 4px; color: var(--comment); font-size: 11px; }
+  .heatmap { display: flex; gap: 3px; }
+  .hm-col { display: flex; flex-direction: column; gap: 3px; }
+  .hm-cell { width: 12px; height: 12px; border-radius: 2px; }
+  .hm-cell.hm-future { background: transparent; }
+  .lvl-0 { background: #22262f; }
+  .lvl-1 { background: #2f5d6e; }
+  .lvl-2 { background: #3f8fab; }
+  .lvl-3 { background: #5cb3cf; }
+  .lvl-4 { background: #80c8e0; }
 }

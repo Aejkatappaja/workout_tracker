@@ -11,6 +11,7 @@ import (
 	"github.com/Aejkatappaja/workout_tracker/internal/api"
 	"github.com/Aejkatappaja/workout_tracker/internal/middleware"
 	"github.com/Aejkatappaja/workout_tracker/internal/store"
+	"github.com/Aejkatappaja/workout_tracker/internal/web"
 	"github.com/Aejkatappaja/workout_tracker/migrations"
 )
 
@@ -20,6 +21,7 @@ type Application struct {
 	UserHandler    *api.UserHandler
 	TokenHandler   *api.TokenHandler
 	MiddleWare     middleware.UserMiddleware
+	WebHandler     *web.Handler
 	DB             *sql.DB
 }
 
@@ -44,6 +46,7 @@ func NewApplication() (*Application, error) {
 	userHandler := api.NewUserHandler(userStore, logger)
 	tokenHandler := api.NewTokenHandler(tokenStore, userStore, logger)
 	middlewareHandler := middleware.UserMiddleware{UserStore: userStore}
+	webHandler := web.NewHandler(userStore, tokenStore, logger)
 
 	app := &Application{
 		Logger:         logger,
@@ -51,6 +54,7 @@ func NewApplication() (*Application, error) {
 		UserHandler:    userHandler,
 		TokenHandler:   tokenHandler,
 		MiddleWare:     middlewareHandler,
+		WebHandler:     webHandler,
 		DB:             pgDB,
 	}
 

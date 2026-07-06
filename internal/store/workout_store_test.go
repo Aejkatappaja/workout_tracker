@@ -212,7 +212,7 @@ func TestDeleteWorkoutByID(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.NoError(t, st.DeleteWorkoutByID(int64(created.ID)))
+	require.NoError(t, st.DeleteWorkoutByID(int64(created.ID), userID))
 
 	got, err := st.GetWorkoutByID(int64(created.ID))
 	require.NoError(t, err)
@@ -223,8 +223,27 @@ func TestDeleteWorkoutByID(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 0, entryCount, "entries must be removed by cascade")
 
-	err = st.DeleteWorkoutByID(999999)
+	err = st.DeleteWorkoutByID(999999, userID)
 	assert.ErrorIs(t, err, sql.ErrNoRows, "deleting a missing workout returns ErrNoRows")
+}
+
+func TestDeleteWorkoutByID_WrongUser(t *testing.T) {
+	db := setupTestDB(t)
+	defer func() { _ = db.Close() }()
+
+	st := NewPostgresWorkoutStore(db)
+	userID := createTestUser(t, db)
+
+	created, err := st.CreateWorkout(&Workout{UserID: userID, Title: "mine", DurationMinutes: 30})
+	require.NoError(t, err)
+
+	// a different user id must not delete it (store is user-scoped)
+	err = st.DeleteWorkoutByID(int64(created.ID), userID+999)
+	assert.ErrorIs(t, err, sql.ErrNoRows)
+
+	got, err := st.GetWorkoutByID(int64(created.ID))
+	require.NoError(t, err)
+	assert.NotNil(t, got, "workout must survive a delete by a non-owner")
 }
 
 func TestGetWorkoutOwner(t *testing.T) {

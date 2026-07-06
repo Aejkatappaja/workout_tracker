@@ -13,13 +13,14 @@ import (
 var staticFS embed.FS
 
 type Handler struct {
-	users  store.UserStore
-	tokens store.TokenStore
-	logger *log.Logger
+	users    store.UserStore
+	tokens   store.TokenStore
+	workouts store.WorkoutStore
+	logger   *log.Logger
 }
 
-func NewHandler(users store.UserStore, tokenStore store.TokenStore, logger *log.Logger) *Handler {
-	return &Handler{users: users, tokens: tokenStore, logger: logger}
+func NewHandler(users store.UserStore, tokenStore store.TokenStore, workouts store.WorkoutStore, logger *log.Logger) *Handler {
+	return &Handler{users: users, tokens: tokenStore, workouts: workouts, logger: logger}
 }
 
 // Static serves the embedded css/js under /static/.

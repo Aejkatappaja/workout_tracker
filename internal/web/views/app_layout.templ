@@ -1,0 +1,20 @@
+package views
+
+templ AppLayout(username string) {
+	@Layout("workouts") {
+		<header class="topbar">
+			<a class="brand" href="/app">~<span class="slash">/</span>workouts</a>
+			<nav>
+				if username != "" {
+					<span class="who">{ username }</span>
+				}
+				<form method="post" action="/logout" class="inline">
+					<button class="btn" type="submit"><span class="mn">❯</span> logout</button>
+				</form>
+			</nav>
+		</header>
+		<main id="main">
+			{ children... }
+		</main>
+	}
+}

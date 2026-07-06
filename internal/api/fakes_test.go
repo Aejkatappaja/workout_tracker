@@ -71,7 +71,7 @@ func (f *fakeWorkoutStore) UpdateWorkout(w *store.Workout) error {
 	return nil
 }
 
-func (f *fakeWorkoutStore) DeleteWorkoutByID(id int64) error {
+func (f *fakeWorkoutStore) DeleteWorkoutByID(id int64, userID int) error {
 	delete(f.workouts, id)
 	return nil
 }

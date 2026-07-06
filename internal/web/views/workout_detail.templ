@@ -1,0 +1,50 @@
+package views
+
+import "github.com/Aejkatappaja/workout_tracker/internal/store"
+
+templ WorkoutDetail(username string, wk store.Workout) {
+	@AppLayout(username) {
+		<div class="sec-head">
+			<h1 class="title"><span class="p">$</span> cat { wk.Title }</h1>
+			<div class="actions">
+				<a class="btn" href={ templ.SafeURL(workoutEditPath(wk.ID)) }>edit</a>
+				<button
+					class="btn danger"
+					hx-delete={ workoutPath(wk.ID) }
+					hx-confirm="delete this workout?"
+				>delete</button>
+			</div>
+		</div>
+		if wk.Description != "" {
+			<p class="muted">{ wk.Description }</p>
+		}
+		<ul class="chips">
+			<li class="chip">{ itoa(wk.DurationMinutes) } min</li>
+			if wk.CaloriesBurned > 0 {
+				<li class="chip">{ itoa(wk.CaloriesBurned) } kcal</li>
+			}
+		</ul>
+		if len(wk.Entries) == 0 {
+			<p class="muted">no exercises.</p>
+		} else {
+			<table class="entries">
+				<thead>
+					<tr><th>#</th><th>exercise</th><th>sets</th><th>reps</th><th>dur (s)</th><th>weight</th><th>notes</th></tr>
+				</thead>
+				<tbody>
+					for _, e := range wk.Entries {
+						<tr>
+							<td>{ itoa(e.OrderIndex) }</td>
+							<td>{ e.ExerciseName }</td>
+							<td>{ itoa(e.Sets) }</td>
+							<td>{ optInt(e.Reps) }</td>
+							<td>{ optInt(e.DurationSeconds) }</td>
+							<td>{ optFloat(e.Weight) }</td>
+							<td>{ e.Notes }</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		}
+	}
+}

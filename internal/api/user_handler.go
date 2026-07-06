@@ -49,7 +49,6 @@ func (h *UserHandler) validateRegisterRequest(req *registerUserRequest) error {
 		return errors.New("invalid email format")
 	}
 
-	// we can have password validation as well
 	if req.Password == "" {
 		return errors.New("password is required")
 	}
@@ -83,7 +82,6 @@ func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 		user.Bio = req.Bio
 	}
 
-	// how do we deal with their password
 	err = user.PasswordHash.Set(req.Password)
 	if err != nil {
 		h.logger.Printf("ERROR: hashing password %v", err)

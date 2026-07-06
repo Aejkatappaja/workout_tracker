@@ -3,6 +3,7 @@ package web
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Aejkatappaja/workout_tracker/internal/middleware"
@@ -12,6 +13,13 @@ import (
 	"github.com/a-h/templ"
 	"github.com/jackc/pgx/v5/pgconn"
 )
+
+// secureRequest reports whether the request arrived over HTTPS, either directly
+// or via a TLS-terminating proxy that sets X-Forwarded-Proto. Used to set the
+// Secure flag on the session cookie so it is never sent over plain HTTP.
+func secureRequest(r *http.Request) bool {
+	return r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+}
 
 func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, c templ.Component) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -30,7 +38,7 @@ func (h *Handler) setSession(w http.ResponseWriter, r *http.Request, userID int)
 		Value:    tok.PlainText,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
+		Secure:   secureRequest(r),
 		SameSite: http.SameSiteLaxMode,
 		Expires:  tok.Expiry,
 	})
@@ -70,7 +78,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		h.render(w, r, http.StatusInternalServerError, views.LoginPage("something went wrong, try again"))
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/app", http.StatusSeeOther)
 }
 
 func (h *Handler) RegisterPage(w http.ResponseWriter, r *http.Request) {
@@ -114,7 +122,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		h.render(w, r, http.StatusInternalServerError, views.RegisterPage("something went wrong, try again"))
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/app", http.StatusSeeOther)
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {

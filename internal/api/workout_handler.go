@@ -122,8 +122,6 @@ func (wh *WorkoutHandler) HandleUpdatedWorkoutByID(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// at this point we can assume we are able to find an existing workout
-
 	var updateWorkoutRequest struct {
 		Title           *string              `json:"title"`
 		Description     *string              `json:"description"`
@@ -222,7 +220,7 @@ func (wh *WorkoutHandler) DeleteWorkout(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = wh.workoutStore.DeleteWorkoutByID(workoutID)
+	err = wh.workoutStore.DeleteWorkoutByID(workoutID, currentUser.ID)
 	if errors.Is(err, sql.ErrNoRows) {
 		utils.WriteJSON(w, http.StatusNotFound, utils.Envelope{"error": "workout does not exist"})
 		return

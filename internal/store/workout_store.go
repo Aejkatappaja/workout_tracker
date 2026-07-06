@@ -39,7 +39,7 @@ type WorkoutStore interface {
 	CreateWorkout(*Workout) (*Workout, error)
 	GetWorkoutByID(id int64) (*Workout, error)
 	UpdateWorkout(*Workout) error
-	DeleteWorkoutByID(id int64) error
+	DeleteWorkoutByID(id int64, userID int) error
 	GetWorkoutOwner(id int64) (int, error)
 	ListWorkoutsByUser(userID int) ([]Workout, error)
 }
@@ -100,7 +100,6 @@ func (pg *PostgresWorkoutStore) CreateWorkout(workout *Workout) (*Workout, error
 		return nil, err
 	}
 
-	// we also need to insert the entries
 	if err := insertWorkoutEntries(tx, workout.ID, workout.Entries); err != nil {
 		return nil, err
 	}
@@ -157,7 +156,6 @@ func (pg *PostgresWorkoutStore) GetWorkoutByID(id int64) (*Workout, error) {
 		return nil, err
 	}
 
-	// lets get the entries
 	entryQuery := `
 	SELECT ID, exercise_name, sets, reps, duration_seconds, weight, notes, order_index
 	FROM workout_entries
@@ -194,9 +192,9 @@ func (pg *PostgresWorkoutStore) UpdateWorkout(workout *Workout) error {
 	query := `
   UPDATE workouts
   SET title = $1, description = $2, duration_minutes = $3, calories_burned = $4
-  WHERE id = $5
+  WHERE id = $5 AND user_id = $6
   `
-	result, err := tx.Exec(query, workout.Title, workout.Description, workout.DurationMinutes, workout.CaloriesBurned, workout.ID)
+	result, err := tx.Exec(query, workout.Title, workout.Description, workout.DurationMinutes, workout.CaloriesBurned, workout.ID, workout.UserID)
 	if err != nil {
 		return err
 	}
@@ -222,12 +220,12 @@ func (pg *PostgresWorkoutStore) UpdateWorkout(workout *Workout) error {
 	return tx.Commit()
 }
 
-func (pg *PostgresWorkoutStore) DeleteWorkoutByID(id int64) error {
+func (pg *PostgresWorkoutStore) DeleteWorkoutByID(id int64, userID int) error {
 	query := `
 	DELETE FROM workouts
-	WHERE id = $1
+	WHERE id = $1 AND user_id = $2
 	`
-	result, err := pg.db.Exec(query, id)
+	result, err := pg.db.Exec(query, id, userID)
 	if err != nil {
 		return err
 	}

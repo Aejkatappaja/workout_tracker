@@ -41,6 +41,7 @@ type WorkoutStore interface {
 	UpdateWorkout(*Workout) error
 	DeleteWorkoutByID(id int64) error
 	GetWorkoutOwner(id int64) (int, error)
+	ListWorkoutsByUser(userID int) ([]Workout, error)
 }
 
 // insertWorkoutEntries inserts all entries in a single statement and assigns the
@@ -110,6 +111,33 @@ func (pg *PostgresWorkoutStore) CreateWorkout(workout *Workout) (*Workout, error
 	}
 
 	return workout, nil
+}
+
+// ListWorkoutsByUser returns the user's workouts without their entries (the list
+// view only needs the summary; the detail view loads entries via GetWorkoutByID).
+func (pg *PostgresWorkoutStore) ListWorkoutsByUser(userID int) ([]Workout, error) {
+	query := `
+	SELECT id, user_id, title, description, duration_minutes, calories_burned
+	FROM workouts
+	WHERE user_id = $1
+	ORDER BY id DESC
+	`
+
+	rows, err := pg.db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	workouts := []Workout{}
+	for rows.Next() {
+		var w Workout
+		if err := rows.Scan(&w.ID, &w.UserID, &w.Title, &w.Description, &w.DurationMinutes, &w.CaloriesBurned); err != nil {
+			return nil, err
+		}
+		workouts = append(workouts, w)
+	}
+	return workouts, rows.Err()
 }
 
 func (pg *PostgresWorkoutStore) GetWorkoutByID(id int64) (*Workout, error) {

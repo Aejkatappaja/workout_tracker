@@ -168,3 +168,7 @@ scripts/          # smoke.sh end-to-end check
 api.hurl          # Hurl e2e for the JSON API
 web.hurl          # Hurl e2e for the browser UI (cookie + HTMX)
 ```
+
+## Credits
+
+The gopher on the login and register pages is based on the Go Gopher by [Renée French](https://reneefrench.blogspot.com/), licensed under [CC-BY-3.0](https://creativecommons.org/licenses/by/3.0/).

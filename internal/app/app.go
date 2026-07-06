@@ -38,6 +38,10 @@ func NewApplication() (*Application, error) {
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
+	if err := store.SeedDemo(pgDB); err != nil {
+		logger.Printf("WARN: seeding demo account: %v", err)
+	}
+
 	workoutStore := store.NewPostgresWorkoutStore(pgDB)
 	userStore := store.NewPostgresUserStore(pgDB)
 	tokenStore := store.NewPostgresTokenStore(pgDB)

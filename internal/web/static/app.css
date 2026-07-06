@@ -89,6 +89,7 @@
     border-radius: 2px;
     padding: 2px 8px;
     letter-spacing: 0.3px;
+    white-space: nowrap;
   }
   .demo-banner {
     background: color-mix(in srgb, var(--gold) 10%, var(--bg-elev));
@@ -289,6 +290,10 @@
   @media (max-width: 640px) {
     .row2 { grid-template-columns: 1fr; }
     .entry-row { grid-template-columns: 1fr 1fr; }
+    .topbar { gap: 10px; }
+    .topbar nav { gap: 10px; }
+    .topbar .who { display: none; }
+    .badge-demo { font-size: 10px; padding: 2px 6px; }
   }
 
   /* detail actions + entries table */

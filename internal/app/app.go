@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/Aejkatappaja/go-gym/internal/api"
+	"github.com/Aejkatappaja/go-gym/internal/mail"
 	"github.com/Aejkatappaja/go-gym/internal/middleware"
 	"github.com/Aejkatappaja/go-gym/internal/store"
 	"github.com/Aejkatappaja/go-gym/internal/web"
@@ -46,11 +47,13 @@ func NewApplication() (*Application, error) {
 	userStore := store.NewPostgresUserStore(pgDB)
 	tokenStore := store.NewPostgresTokenStore(pgDB)
 
+	mailer := mail.New(logger, os.Getenv("RESEND_API_KEY"), os.Getenv("MAIL_FROM"))
+
 	workoutHandler := api.NewWorkoutHandler(workoutStore, logger)
 	userHandler := api.NewUserHandler(userStore, logger)
 	tokenHandler := api.NewTokenHandler(tokenStore, userStore, logger)
 	middlewareHandler := middleware.UserMiddleware{UserStore: userStore}
-	webHandler := web.NewHandler(userStore, tokenStore, workoutStore, logger)
+	webHandler := web.NewHandler(userStore, tokenStore, workoutStore, logger, mailer)
 
 	app := &Application{
 		Logger:         logger,

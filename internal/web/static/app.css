@@ -70,7 +70,7 @@
   .shell {
     position: relative;
     z-index: 1;
-    max-width: 900px;
+    max-width: 1080px;
     margin: 0 auto;
     padding: 28px 32px 80px;
     display: flex;
@@ -314,6 +314,12 @@
     .topbar nav { gap: 10px; }
     .topbar .who { display: none; }
     .badge-demo { font-size: 10px; padding: 2px 6px; }
+  }
+  /* tighter gutters on phones so content (incl. the auth card) uses more width */
+  @media (max-width: 520px) {
+    .shell { padding: 16px 18px 72px; gap: 24px; }
+    /* the auth card is the shell's only child here: center it vertically */
+    .auth { margin: auto; }
   }
 
   /* detail actions + entries table */

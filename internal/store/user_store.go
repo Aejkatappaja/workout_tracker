@@ -77,7 +77,9 @@ func NewPostgresUserStore(db *sql.DB) *PostgresUserStore {
 type UserStore interface {
 	CreateUser(*User) error
 	GetUserByUsername(username string) (*User, error)
+	GetUserByEmail(email string) (*User, error)
 	UpdateUser(*User) error
+	UpdateUserPassword(userID int, plaintextPassword string) error
 	GetUserToken(scope, tokenPlainText string) (*User, error)
 }
 
@@ -123,6 +125,63 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	}
 
 	return user, nil
+}
+
+func (s *PostgresUserStore) GetUserByEmail(email string) (*User, error) {
+	user := &User{PasswordHash: password{}}
+
+	query := `
+	SELECT id, username, email, password_hash, bio, created_at, updated_at
+	FROM users
+	WHERE email = $1
+	`
+	err := s.db.QueryRow(query, email).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash.hash,
+		&user.Bio,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (s *PostgresUserStore) UpdateUserPassword(userID int, plaintextPassword string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(plaintextPassword), 12)
+	if err != nil {
+		return err
+	}
+
+	query := `
+	UPDATE users
+	SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
+	WHERE id = $2
+	`
+	result, err := s.db.Exec(query, hash, userID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
 }
 
 func (s *PostgresUserStore) UpdateUser(user *User) error {

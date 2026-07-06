@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"io"
 	"log"
 	"net/http"
@@ -19,7 +20,11 @@ import (
 
 type fakeUserStore struct {
 	byName    map[string]*store.User
+	byEmail   map[string]*store.User
+	tokenUser *store.User // returned by GetUserToken (reset flow)
 	createErr error
+	newPass   string // last plaintext passed to UpdateUserPassword
+	pwUpdated bool
 }
 
 func (f *fakeUserStore) CreateUser(u *store.User) error {
@@ -31,15 +36,38 @@ func (f *fakeUserStore) CreateUser(u *store.User) error {
 	return nil
 }
 func (f *fakeUserStore) GetUserByUsername(n string) (*store.User, error) { return f.byName[n], nil }
+func (f *fakeUserStore) GetUserByEmail(e string) (*store.User, error)    { return f.byEmail[e], nil }
 func (f *fakeUserStore) UpdateUser(*store.User) error                    { return nil }
+func (f *fakeUserStore) UpdateUserPassword(_ int, plaintext string) error {
+	f.newPass = plaintext
+	f.pwUpdated = true
+	return nil
+}
 func (f *fakeUserStore) GetUserToken(scope, t string) (*store.User, error) {
-	return nil, nil
+	return f.tokenUser, nil
 }
 
-type fakeTokenStore struct{ deleted bool }
+type fakeMailer struct {
+	sent    bool
+	to      string
+	subject string
+}
+
+func (m *fakeMailer) Send(_ context.Context, to, subject, _, _ string) error {
+	m.sent = true
+	m.to = to
+	m.subject = subject
+	return nil
+}
+
+type fakeTokenStore struct {
+	deleted bool
+	created int
+}
 
 func (fakeTokenStore) Insert(*tokens.Token) error { return nil }
-func (fakeTokenStore) CreateNewToken(userID int, ttl time.Duration, scope string) (*tokens.Token, error) {
+func (f *fakeTokenStore) CreateNewToken(userID int, ttl time.Duration, scope string) (*tokens.Token, error) {
+	f.created++
 	return &tokens.Token{PlainText: "test-token", UserID: userID, Expiry: time.Now().Add(ttl)}, nil
 }
 func (f *fakeTokenStore) DeleteAllTokensForUser(userID int, scope string) error {
@@ -48,7 +76,11 @@ func (f *fakeTokenStore) DeleteAllTokensForUser(userID int, scope string) error 
 }
 
 func newTestHandler(users store.UserStore, toks store.TokenStore) *Handler {
-	return NewHandler(users, toks, nil, log.New(io.Discard, "", 0))
+	return NewHandler(users, toks, nil, log.New(io.Discard, "", 0), &fakeMailer{})
+}
+
+func newTestHandlerMail(users store.UserStore, toks store.TokenStore, m *fakeMailer) *Handler {
+	return NewHandler(users, toks, nil, log.New(io.Discard, "", 0), m)
 }
 
 func formPost(target, body string) *http.Request {
@@ -153,4 +185,75 @@ func TestLogout(t *testing.T) {
 	c := sessionCookie(rec)
 	require.NotNil(t, c)
 	assert.True(t, c.MaxAge < 0, "logout must clear the session cookie")
+}
+
+func TestForgot(t *testing.T) {
+	neo := &store.User{ID: 1, Username: "neo", Email: "neo@x.io"}
+	tests := []struct {
+		name        string
+		email       string
+		known       bool
+		wantCreated int
+	}{
+		{"known email creates a reset token", "neo@x.io", true, 1},
+		{"unknown email creates nothing", "ghost@x.io", false, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			byEmail := map[string]*store.User{}
+			if tt.known {
+				byEmail["neo@x.io"] = neo
+			}
+			ts := &fakeTokenStore{}
+			h := newTestHandlerMail(&fakeUserStore{byEmail: byEmail}, ts, &fakeMailer{})
+			rec := httptest.NewRecorder()
+
+			h.Forgot(rec, formPost("/forgot", "email="+tt.email))
+
+			// identical response either way (no account enumeration)
+			assert.Equal(t, http.StatusOK, rec.Code)
+			assert.Equal(t, tt.wantCreated, ts.created)
+		})
+	}
+}
+
+func TestReset(t *testing.T) {
+	neo := &store.User{ID: 1, Username: "neo", Email: "neo@x.io"}
+
+	t.Run("valid token sets the password and revokes tokens", func(t *testing.T) {
+		us := &fakeUserStore{tokenUser: neo}
+		ts := &fakeTokenStore{}
+		h := newTestHandler(us, ts)
+		rec := httptest.NewRecorder()
+
+		h.Reset(rec, formPost("/reset", "token=abc&password=newpass1234"))
+
+		assert.Equal(t, http.StatusSeeOther, rec.Code)
+		assert.Equal(t, "/login", rec.Header().Get("Location"))
+		assert.True(t, us.pwUpdated, "password must be updated")
+		assert.Equal(t, "newpass1234", us.newPass)
+		assert.True(t, ts.deleted, "tokens must be revoked")
+	})
+
+	t.Run("invalid token is 400 and changes nothing", func(t *testing.T) {
+		us := &fakeUserStore{tokenUser: nil}
+		h := newTestHandler(us, &fakeTokenStore{})
+		rec := httptest.NewRecorder()
+
+		h.Reset(rec, formPost("/reset", "token=bad&password=newpass1234"))
+
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+		assert.False(t, us.pwUpdated)
+	})
+
+	t.Run("short password is 400", func(t *testing.T) {
+		us := &fakeUserStore{tokenUser: neo}
+		h := newTestHandler(us, &fakeTokenStore{})
+		rec := httptest.NewRecorder()
+
+		h.Reset(rec, formPost("/reset", "token=abc&password=short"))
+
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+		assert.False(t, us.pwUpdated)
+	})
 }

@@ -115,7 +115,9 @@ func (f *fakeUserStore) GetUserByUsername(username string) (*store.User, error) 
 	return f.users[username], nil
 }
 
-func (f *fakeUserStore) UpdateUser(*store.User) error { return nil }
+func (f *fakeUserStore) UpdateUser(*store.User) error               { return nil }
+func (f *fakeUserStore) GetUserByEmail(string) (*store.User, error) { return nil, nil }
+func (f *fakeUserStore) UpdateUserPassword(int, string) error       { return nil }
 
 func (f *fakeUserStore) GetUserToken(scope, tokenPlainText string) (*store.User, error) {
 	return nil, nil

@@ -1,33 +1,16 @@
 package views
 
-templ LoginPage(errMsg string) {
-	@Layout("login") {
+// authShell is the shared scaffold for every auth page: the Layout, the centered
+// .auth column and the terminal-style section header. Each page supplies its
+// Layout title, the shell command shown in the header, and its body as children.
+templ authShell(layoutTitle, cmd string) {
+	@Layout(layoutTitle) {
 		<main class="auth" id="main">
 			<div class="sec-head">
-				<h1 class="title"><span class="p">$</span> ./login.sh</h1>
+				<h1 class="title"><span class="p">$</span> { cmd }</h1>
 				<span class="aside">workout tracker</span>
 			</div>
-			if errMsg != "" {
-				<p class="form-error">{ errMsg }</p>
-			}
-			@GopherMascot()
-			<form class={ "card", "auth-form", templ.KV("invalid", errMsg != "") } method="post" action="/login">
-				<label>
-					<span>username</span>
-					<input name="username" autocomplete="username" autofocus required aria-invalid?={ errMsg != "" }/>
-				</label>
-				<label>
-					<span>password</span>
-					<div class="pw-wrap">
-						<input class="pw-input" name="password" type="password" autocomplete="current-password" required aria-invalid?={ errMsg != "" }/>
-						@PwToggle()
-					</div>
-				</label>
-				<button class="btn" type="submit"><span class="mn">❯</span> login</button>
-			</form>
-			<p class="muted">no account? <a href="/register">register</a></p>
-			<div class="auth-or"><span>or</span></div>
-			<a class="btn demo-cta" href="/demo"><span class="mn">❯</span> explore the demo</a>
+			{ children... }
 		</main>
 	}
 }
@@ -42,40 +25,104 @@ templ PwToggle() {
 	</button>
 }
 
+templ LoginPage(errMsg string) {
+	@authShell("login", "./login.sh") {
+		if errMsg != "" {
+			<p class="form-error">{ errMsg }</p>
+		}
+		@GopherMascot()
+		<form class={ "card", "auth-form", templ.KV("invalid", errMsg != "") } method="post" action="/login">
+			<label>
+				<span>username</span>
+				<input name="username" autocomplete="username" autofocus required aria-invalid?={ errMsg != "" }/>
+			</label>
+			<label>
+				<span>password</span>
+				<div class="pw-wrap">
+					<input class="pw-input" name="password" type="password" autocomplete="current-password" required aria-invalid?={ errMsg != "" }/>
+					@PwToggle()
+				</div>
+			</label>
+			<button class="btn" type="submit"><span class="mn">❯</span> login</button>
+		</form>
+		<p class="muted">no account? <a href="/register">register</a> · <a href="/forgot">forgot password?</a></p>
+		<div class="auth-or"><span>or</span></div>
+		<a class="btn demo-cta" href="/demo"><span class="mn">❯</span> explore the demo</a>
+	}
+}
+
 templ RegisterPage(errMsg string) {
-	@Layout("register") {
-		<main class="auth" id="main">
-			<div class="sec-head">
-				<h1 class="title"><span class="p">$</span> ./register.sh</h1>
-				<span class="aside">workout tracker</span>
-			</div>
+	@authShell("register", "./register.sh") {
+		if errMsg != "" {
+			<p class="form-error">{ errMsg }</p>
+		}
+		@GopherMascot()
+		<form class={ "card", "auth-form", templ.KV("invalid", errMsg != "") } method="post" action="/register">
+			<label>
+				<span>username</span>
+				<input name="username" autocomplete="username" maxlength="50" autofocus required aria-invalid?={ errMsg != "" }/>
+				<small class="hint">1 to 50 characters</small>
+			</label>
+			<label>
+				<span>email</span>
+				<input name="email" type="email" autocomplete="email" required aria-invalid?={ errMsg != "" }/>
+			</label>
+			<label>
+				<span>password</span>
+				<div class="pw-wrap">
+					<input class="pw-input" name="password" type="password" autocomplete="new-password" minlength="8" required aria-invalid?={ errMsg != "" }/>
+					@PwToggle()
+				</div>
+				<small class="hint">8 characters minimum</small>
+			</label>
+			<button class="btn" type="submit"><span class="mn">❯</span> create account</button>
+		</form>
+		<p class="muted">already registered? <a href="/login">login</a></p>
+		<div class="auth-or"><span>or</span></div>
+		<a class="btn demo-cta" href="/demo"><span class="mn">❯</span> explore the demo</a>
+	}
+}
+
+templ ForgotPage(errMsg string, sent bool) {
+	@authShell("reset password", "./reset.sh") {
+		@GopherMascot()
+		if sent {
+			<p class="muted">a reset link is on its way, provided an account exists for that email. check your inbox.</p>
+			<div class="auth-or"><span>or</span></div>
+			<a class="btn demo-cta" href="/login"><span class="mn">❯</span> back to login</a>
+		} else {
 			if errMsg != "" {
 				<p class="form-error">{ errMsg }</p>
 			}
-			@GopherMascot()
-			<form class={ "card", "auth-form", templ.KV("invalid", errMsg != "") } method="post" action="/register">
-				<label>
-					<span>username</span>
-					<input name="username" autocomplete="username" maxlength="50" autofocus required aria-invalid?={ errMsg != "" }/>
-					<small class="hint">1 to 50 characters</small>
-				</label>
+			<form class="card auth-form" method="post" action="/forgot">
 				<label>
 					<span>email</span>
-					<input name="email" type="email" autocomplete="email" required aria-invalid?={ errMsg != "" }/>
+					<input name="email" type="email" autocomplete="email" autofocus required/>
 				</label>
-				<label>
-					<span>password</span>
-					<div class="pw-wrap">
-						<input class="pw-input" name="password" type="password" autocomplete="new-password" minlength="8" required aria-invalid?={ errMsg != "" }/>
-						@PwToggle()
-					</div>
-					<small class="hint">8 characters minimum</small>
-				</label>
-				<button class="btn" type="submit"><span class="mn">❯</span> create account</button>
+				<button class="btn" type="submit"><span class="mn">❯</span> send reset link</button>
 			</form>
-			<p class="muted">already registered? <a href="/login">login</a></p>
-			<div class="auth-or"><span>or</span></div>
-			<a class="btn demo-cta" href="/demo"><span class="mn">❯</span> explore the demo</a>
-		</main>
+			<p class="muted">remembered it? <a href="/login">login</a></p>
+		}
+	}
+}
+
+templ ResetPage(token, errMsg string) {
+	@authShell("set new password", "./new-password.sh") {
+		if errMsg != "" {
+			<p class="form-error">{ errMsg }</p>
+		}
+		@GopherMascot()
+		<form class={ "card", "auth-form", templ.KV("invalid", errMsg != "") } method="post" action="/reset">
+			<input type="hidden" name="token" value={ token }/>
+			<label>
+				<span>new password</span>
+				<div class="pw-wrap">
+					<input class="pw-input" name="password" type="password" autocomplete="new-password" minlength="8" autofocus required aria-invalid?={ errMsg != "" }/>
+					@PwToggle()
+				</div>
+				<small class="hint">8 characters minimum</small>
+			</label>
+			<button class="btn" type="submit"><span class="mn">❯</span> set new password</button>
+		</form>
 	}
 }

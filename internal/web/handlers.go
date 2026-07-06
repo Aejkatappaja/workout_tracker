@@ -1,8 +1,10 @@
 package web
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -25,6 +27,46 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, c t
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
 	_ = c.Render(r.Context(), w)
+}
+
+// baseURL reconstructs the site's absolute origin from the request, so email
+// links point back at whatever host (custom domain or code.run) served the page.
+func baseURL(r *http.Request) string {
+	scheme := "http"
+	if secureRequest(r) {
+		scheme = "https"
+	}
+	return scheme + "://" + r.Host
+}
+
+// sendMail renders the HTML body once, then delivers in the background so the
+// HTTP response is never blocked on the mail provider. Failures are logged.
+func (h *Handler) sendMail(to, subject string, body templ.Component, text string) {
+	var sb strings.Builder
+	if err := body.Render(context.Background(), &sb); err != nil {
+		h.logger.Printf("ERROR: render email to %s: %v", to, err)
+		return
+	}
+	html := sb.String()
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := h.mailer.Send(ctx, to, subject, html, text); err != nil {
+			h.logger.Printf("ERROR: send email to %s: %v", to, err)
+		}
+	}()
+}
+
+func welcomeText(username, appURL string) string {
+	return "welcome, " + username + "\n\n" +
+		"Your go-gym account is ready. Log your workouts, track reps or duration, and watch your activity heatmap fill in.\n\n" +
+		"Open go-gym: " + appURL + "\n\ngo-gym"
+}
+
+func resetText(resetURL string) string {
+	return "reset your go-gym password\n\n" +
+		"Use this link to choose a new password (expires in 1 hour, single use):\n" + resetURL + "\n\n" +
+		"If you didn't request this, you can ignore this email. Your password won't change.\n\ngo-gym"
 }
 
 // setSession issues a token and stores it in an HttpOnly session cookie.
@@ -139,7 +181,97 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		h.render(w, r, http.StatusInternalServerError, views.RegisterPage("something went wrong, try again"))
 		return
 	}
+
+	appURL := baseURL(r) + "/app"
+	h.sendMail(user.Email, "welcome to go-gym", views.WelcomeEmail(user.Username, appURL), welcomeText(user.Username, appURL))
+
 	http.Redirect(w, r, "/app", http.StatusSeeOther)
+}
+
+// ForgotForm renders the "enter your email" page.
+func (h *Handler) ForgotForm(w http.ResponseWriter, r *http.Request) {
+	h.render(w, r, http.StatusOK, views.ForgotPage("", false))
+}
+
+// Forgot issues a password-reset link. The response is identical whether or not
+// the email matches an account, so it never reveals which emails are registered.
+func (h *Handler) Forgot(w http.ResponseWriter, r *http.Request) {
+	email := strings.TrimSpace(r.FormValue("email"))
+	if email == "" {
+		h.render(w, r, http.StatusBadRequest, views.ForgotPage("enter your email", false))
+		return
+	}
+
+	user, err := h.users.GetUserByEmail(email)
+	if err != nil {
+		h.logger.Printf("ERROR: forgot lookup: %v", err)
+	}
+	// Skip the seeded demo account; otherwise send a 1-hour, single-use link.
+	if user != nil && user.Username != store.DemoUsername {
+		tok, terr := h.tokens.CreateNewToken(user.ID, time.Hour, tokens.ScopePasswordReset)
+		if terr != nil {
+			h.logger.Printf("ERROR: forgot token: %v", terr)
+		} else {
+			resetURL := baseURL(r) + "/reset?token=" + url.QueryEscape(tok.PlainText)
+			h.sendMail(user.Email, "reset your go-gym password", views.ResetEmail(resetURL), resetText(resetURL))
+		}
+	}
+
+	h.render(w, r, http.StatusOK, views.ForgotPage("", true))
+}
+
+// ResetForm renders the "choose a new password" page for a reset link.
+func (h *Handler) ResetForm(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		h.render(w, r, http.StatusBadRequest, views.ResetPage("", "this reset link is invalid or has expired"))
+		return
+	}
+	h.render(w, r, http.StatusOK, views.ResetPage(token, ""))
+}
+
+// Reset validates the token, sets the new password, and invalidates the reset
+// token (single use) plus any existing sessions.
+func (h *Handler) Reset(w http.ResponseWriter, r *http.Request) {
+	token := r.FormValue("token")
+	password := r.FormValue("password")
+
+	if token == "" {
+		h.render(w, r, http.StatusBadRequest, views.ResetPage("", "this reset link is invalid or has expired"))
+		return
+	}
+	if len(password) < 8 {
+		h.render(w, r, http.StatusBadRequest, views.ResetPage(token, "password must be at least 8 characters"))
+		return
+	}
+
+	user, err := h.users.GetUserToken(tokens.ScopePasswordReset, token)
+	if err != nil {
+		h.logger.Printf("ERROR: reset token lookup: %v", err)
+		h.render(w, r, http.StatusInternalServerError, views.ResetPage(token, "something went wrong, try again"))
+		return
+	}
+	if user == nil {
+		h.render(w, r, http.StatusBadRequest, views.ResetPage("", "this reset link is invalid or has expired"))
+		return
+	}
+
+	if err := h.users.UpdateUserPassword(user.ID, password); err != nil {
+		h.logger.Printf("ERROR: reset update password: %v", err)
+		h.render(w, r, http.StatusInternalServerError, views.ResetPage(token, "something went wrong, try again"))
+		return
+	}
+
+	// single-use: drop the reset token(s), and revoke existing sessions so a
+	// leaked cookie can't outlive the password change.
+	if err := h.tokens.DeleteAllTokensForUser(user.ID, tokens.ScopePasswordReset); err != nil {
+		h.logger.Printf("ERROR: reset revoke reset tokens: %v", err)
+	}
+	if err := h.tokens.DeleteAllTokensForUser(user.ID, tokens.ScopeAuth); err != nil {
+		h.logger.Printf("ERROR: reset revoke sessions: %v", err)
+	}
+
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {

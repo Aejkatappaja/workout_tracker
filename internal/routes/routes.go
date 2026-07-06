@@ -74,6 +74,10 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 	r.With(authLimit).Get("/demo", app.WebHandler.DemoLogin)
 	r.Get("/register", app.WebHandler.RegisterPage)
 	r.With(authLimit).Post("/register", app.WebHandler.Register)
+	r.Get("/forgot", app.WebHandler.ForgotForm)
+	r.With(authLimit).Post("/forgot", app.WebHandler.Forgot)
+	r.Get("/reset", app.WebHandler.ResetForm)
+	r.With(authLimit).Post("/reset", app.WebHandler.Reset)
 
 	return r
 }

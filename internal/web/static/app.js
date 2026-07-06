@@ -83,15 +83,18 @@ document.addEventListener("click", (e) => {
   }
   setArms(ARM_PARKED); // start hidden
 
-  const isPw = (el) => el.classList.contains("pw-input");
-
+  // A hidden password field (type="password") covers the eyes; any other field,
+  // including a password revealed via the toggle (type="text"), is tracked like
+  // normal so the eyes follow the caret.
   form.addEventListener("focusin", (e) => {
     const el = e.target;
-    if (isPw(el)) { look(0, 0); tweenArms(el.type === "password" ? 0 : ARM_PARKED, 380); return; }
-    if (el.tagName === "INPUT") { tweenArms(ARM_PARKED, 320); track(el); }
+    if (el.tagName !== "INPUT") return;
+    if (el.type === "password") { look(0, 0); tweenArms(0, 380); return; }
+    tweenArms(ARM_PARKED, 320);
+    track(el);
   });
   form.addEventListener("input", (e) => {
-    if (e.target.tagName === "INPUT" && !isPw(e.target)) track(e.target);
+    if (e.target.tagName === "INPUT" && e.target.type !== "password") track(e.target);
   });
   form.addEventListener("focusout", (e) => {
     if (!form.contains(e.relatedTarget)) { look(0, 0); tweenArms(ARM_PARKED, 320); }
@@ -103,11 +106,33 @@ document.addEventListener("click", (e) => {
   const pw = form.querySelector(".pw-input");
   if (toggle && pw) {
     toggle.addEventListener("click", () => {
-      const showing = pw.type === "password";
+      const showing = pw.type === "password"; // true => about to reveal
       pw.type = showing ? "text" : "password";
       toggle.setAttribute("aria-pressed", showing ? "true" : "false");
       toggle.setAttribute("aria-label", showing ? "hide password" : "show password");
+      // Drive the arms directly: a re-focus can't be relied on to fire focusin
+      // (the field is already focused, and some browsers don't focus a button on
+      // click). Revealing uncovers the eyes and tracks the caret; hiding covers.
+      if (showing) {
+        tweenArms(ARM_PARKED, 320);
+        track(pw);
+      } else {
+        look(0, 0);
+        tweenArms(0, 320);
+      }
       pw.focus();
     });
+  }
+
+  // Reflect the field autofocused before this deferred script ran (e.g. the reset
+  // page focuses its password field, which should cover the eyes on load).
+  const active = document.activeElement;
+  if (active && form.contains(active) && active.tagName === "INPUT") {
+    if (active.type === "password") {
+      look(0, 0);
+      tweenArms(0, 380);
+    } else {
+      track(active);
+    }
   }
 })();

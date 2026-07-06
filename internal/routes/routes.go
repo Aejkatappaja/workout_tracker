@@ -46,6 +46,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 	r.Handle("/static/*", app.WebHandler.Static())
 	r.Get("/login", app.WebHandler.LoginPage)
 	r.Post("/login", app.WebHandler.Login)
+	r.Get("/demo", app.WebHandler.DemoLogin)
 	r.Get("/register", app.WebHandler.RegisterPage)
 	r.Post("/register", app.WebHandler.Register)
 

@@ -22,6 +22,8 @@ templ LoginPage(errMsg string) {
 				<button class="btn" type="submit"><span class="mn">❯</span> login</button>
 			</form>
 			<p class="muted">no account? <a href="/register">register</a></p>
+			<div class="auth-or"><span>or</span></div>
+			<a class="btn demo-cta" href="/demo"><span class="mn">❯</span> explore the demo</a>
 		</main>
 	}
 }
@@ -54,6 +56,8 @@ templ RegisterPage(errMsg string) {
 				<button class="btn" type="submit"><span class="mn">❯</span> create account</button>
 			</form>
 			<p class="muted">already registered? <a href="/login">login</a></p>
+			<div class="auth-or"><span>or</span></div>
+			<a class="btn demo-cta" href="/demo"><span class="mn">❯</span> explore the demo</a>
 		</main>
 	}
 }

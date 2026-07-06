@@ -64,6 +64,11 @@ func (h *Handler) Root(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/app", http.StatusSeeOther)
 }
 
+// readOnly reports whether the caller is the demo account, which cannot write.
+func (h *Handler) readOnly(r *http.Request) bool {
+	return middleware.GetUser(r).Username == store.DemoUsername
+}
+
 const activityWeeks = 16
 
 func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +96,7 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	}
 	activity := views.BuildActivity(counts, activityWeeks, time.Now())
 
-	h.render(w, r, http.StatusOK, views.Dashboard(user.Username, workouts, stats, activity))
+	h.render(w, r, http.StatusOK, views.Dashboard(user.Username, workouts, stats, activity, h.readOnly(r)))
 }
 
 // loadOwnedWorkout fetches a workout by the {id} param and checks ownership.
@@ -123,20 +128,32 @@ func (h *Handler) Detail(w http.ResponseWriter, r *http.Request) {
 		h.notFound(w, r)
 		return
 	}
-	h.render(w, r, http.StatusOK, views.WorkoutDetail(middleware.GetUser(r).Username, *wk))
+	h.render(w, r, http.StatusOK, views.WorkoutDetail(middleware.GetUser(r).Username, *wk, h.readOnly(r)))
 }
 
 func (h *Handler) NewForm(w http.ResponseWriter, r *http.Request) {
+	if h.readOnly(r) {
+		http.Redirect(w, r, "/app", http.StatusSeeOther)
+		return
+	}
 	user := middleware.GetUser(r)
 	blank := store.Workout{Entries: []store.WorkoutEntry{{}}}
 	h.render(w, r, http.StatusOK, views.WorkoutForm(user.Username, blank, "", "/app/workouts", "vim ~/workouts/new"))
 }
 
 func (h *Handler) EntryRow(w http.ResponseWriter, r *http.Request) {
+	if h.readOnly(r) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 	h.render(w, r, http.StatusOK, views.EntryRow(store.WorkoutEntry{}))
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+	if h.readOnly(r) {
+		w.Header().Set("HX-Redirect", "/app")
+		return
+	}
 	user := middleware.GetUser(r)
 	wk := parseWorkoutForm(r)
 	wk.UserID = user.ID
@@ -156,6 +173,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) EditForm(w http.ResponseWriter, r *http.Request) {
+	if h.readOnly(r) {
+		http.Redirect(w, r, "/app", http.StatusSeeOther)
+		return
+	}
 	wk, err := h.loadOwnedWorkout(r)
 	if err != nil {
 		h.logger.Printf("ERROR: web edit form: %v", err)
@@ -172,6 +193,10 @@ func (h *Handler) EditForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	if h.readOnly(r) {
+		w.Header().Set("HX-Redirect", "/app")
+		return
+	}
 	id, ok, err := h.checkOwner(r)
 	if err != nil {
 		h.logger.Printf("ERROR: web update lookup: %v", err)
@@ -204,6 +229,10 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	if h.readOnly(r) {
+		w.Header().Set("HX-Redirect", "/app")
+		return
+	}
 	id, ok, err := h.checkOwner(r)
 	if err != nil {
 		h.logger.Printf("ERROR: web delete lookup: %v", err)

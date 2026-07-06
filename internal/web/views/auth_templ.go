@@ -102,7 +102,7 @@ func LoginPage(errMsg string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "></label> <button class=\"btn\" type=\"submit\"><span class=\"mn\">❯</span> login</button></form><p class=\"muted\">no account? <a href=\"/register\">register</a></p></main>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "></label> <button class=\"btn\" type=\"submit\"><span class=\"mn\">❯</span> login</button></form><p class=\"muted\">no account? <a href=\"/register\">register</a></p><div class=\"auth-or\"><span>or</span></div><a class=\"btn demo-cta\" href=\"/demo\"><span class=\"mn\">❯</span> explore the demo</a></main>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -161,7 +161,7 @@ func RegisterPage(errMsg string) templ.Component {
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(errMsg)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/auth.templ`, Line: 37, Col: 34}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/views/auth.templ`, Line: 39, Col: 34}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -220,7 +220,7 @@ func RegisterPage(errMsg string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "> <small class=\"hint\">8 characters minimum</small></label> <button class=\"btn\" type=\"submit\"><span class=\"mn\">❯</span> create account</button></form><p class=\"muted\">already registered? <a href=\"/login\">login</a></p></main>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "> <small class=\"hint\">8 characters minimum</small></label> <button class=\"btn\" type=\"submit\"><span class=\"mn\">❯</span> create account</button></form><p class=\"muted\">already registered? <a href=\"/login\">login</a></p><div class=\"auth-or\"><span>or</span></div><a class=\"btn demo-cta\" href=\"/demo\"><span class=\"mn\">❯</span> explore the demo</a></main>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

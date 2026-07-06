@@ -49,6 +49,22 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 	h.render(w, r, http.StatusOK, views.LoginPage(""))
 }
 
+// DemoLogin drops the visitor into the read-only demo account without a password.
+func (h *Handler) DemoLogin(w http.ResponseWriter, r *http.Request) {
+	demo, err := h.users.GetUserByUsername(store.DemoUsername)
+	if err != nil || demo == nil {
+		h.logger.Printf("ERROR: demo login lookup: %v", err)
+		h.render(w, r, http.StatusServiceUnavailable, views.LoginPage("the demo is unavailable right now"))
+		return
+	}
+	if err := h.setSession(w, r, demo.ID); err != nil {
+		h.logger.Printf("ERROR: demo session: %v", err)
+		h.render(w, r, http.StatusInternalServerError, views.LoginPage("something went wrong, try again"))
+		return
+	}
+	http.Redirect(w, r, "/app", http.StatusSeeOther)
+}
+
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	user, err := h.users.GetUserByUsername(r.FormValue("username"))
 	if err != nil {

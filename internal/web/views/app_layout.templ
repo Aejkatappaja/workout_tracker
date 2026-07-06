@@ -1,10 +1,13 @@
 package views
 
-templ AppLayout(username string) {
+templ AppLayout(username string, readOnly bool) {
 	@Layout("workouts") {
 		<header class="topbar">
 			<a class="brand" href="/app">~<span class="slash">/</span>workouts</a>
 			<nav>
+				if readOnly {
+					<span class="badge-demo">demo · read-only</span>
+				}
 				if username != "" {
 					<span class="who">{ username }</span>
 				}

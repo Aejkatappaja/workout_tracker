@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Aejkatappaja/workout_tracker/internal/store"
+	"github.com/Aejkatappaja/go-gym/internal/store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

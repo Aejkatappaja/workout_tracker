@@ -8,9 +8,9 @@ import (
 	"net/http/httptest"
 	"time"
 
-	"github.com/Aejkatappaja/workout_tracker/internal/middleware"
-	"github.com/Aejkatappaja/workout_tracker/internal/store"
-	"github.com/Aejkatappaja/workout_tracker/internal/tokens"
+	"github.com/Aejkatappaja/go-gym/internal/middleware"
+	"github.com/Aejkatappaja/go-gym/internal/store"
+	"github.com/Aejkatappaja/go-gym/internal/tokens"
 	"github.com/go-chi/chi/v5"
 )
 

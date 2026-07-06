@@ -8,7 +8,7 @@ package views
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/Aejkatappaja/workout_tracker/internal/store"
+import "github.com/Aejkatappaja/go-gym/internal/store"
 
 // WorkoutForm renders the create/edit form. action is the hx-post target,
 // heading the terminal-style title.

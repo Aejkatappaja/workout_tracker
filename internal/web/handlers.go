@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Aejkatappaja/workout_tracker/internal/middleware"
-	"github.com/Aejkatappaja/workout_tracker/internal/store"
-	"github.com/Aejkatappaja/workout_tracker/internal/tokens"
-	"github.com/Aejkatappaja/workout_tracker/internal/web/views"
+	"github.com/Aejkatappaja/go-gym/internal/middleware"
+	"github.com/Aejkatappaja/go-gym/internal/store"
+	"github.com/Aejkatappaja/go-gym/internal/tokens"
+	"github.com/Aejkatappaja/go-gym/internal/web/views"
 	"github.com/a-h/templ"
 	"github.com/jackc/pgx/v5/pgconn"
 )

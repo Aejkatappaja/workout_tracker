@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Aejkatappaja/workout_tracker/internal/store"
+	"github.com/Aejkatappaja/go-gym/internal/store"
 )
 
 //go:embed static

@@ -131,6 +131,19 @@ func TestWebDetail_NotOwned(t *testing.T) {
 	assert.NotContains(t, rec.Body.String(), "someone else's")
 }
 
+func TestReadOnlyDemoBlocksWrite(t *testing.T) {
+	ws := &fakeWorkoutStore{}
+	h := handlerWith(ws)
+	demo := &store.User{ID: 1, Username: store.DemoUsername}
+
+	rec := httptest.NewRecorder()
+	body := "title=x&duration_minutes=30&entry_exercise=a&entry_sets=3&entry_reps=5&entry_duration="
+	h.Create(rec, webReq(http.MethodPost, "/app/workouts", body, demo, ""))
+
+	assert.Equal(t, "/app", rec.Header().Get("HX-Redirect"), "demo write bounces to dashboard")
+	assert.Nil(t, ws.created, "demo must not create workouts")
+}
+
 func TestWebDelete(t *testing.T) {
 	owner := &store.User{ID: 1}
 	ws := &fakeWorkoutStore{byID: map[int64]*store.Workout{

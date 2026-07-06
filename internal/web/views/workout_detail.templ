@@ -2,18 +2,20 @@ package views
 
 import "github.com/Aejkatappaja/go-gym/internal/store"
 
-templ WorkoutDetail(username string, wk store.Workout) {
-	@AppLayout(username) {
+templ WorkoutDetail(username string, wk store.Workout, readOnly bool) {
+	@AppLayout(username, readOnly) {
 		<div class="sec-head">
 			<h1 class="title"><span class="p">$</span> cat { wk.Title }</h1>
-			<div class="actions">
-				<a class="btn" href={ templ.SafeURL(workoutEditPath(wk.ID)) }>edit</a>
-				<button
-					class="btn danger"
-					hx-delete={ workoutPath(wk.ID) }
-					hx-confirm="delete this workout?"
-				>delete</button>
-			</div>
+			if !readOnly {
+				<div class="actions">
+					<a class="btn" href={ templ.SafeURL(workoutEditPath(wk.ID)) }>edit</a>
+					<button
+						class="btn danger"
+						hx-delete={ workoutPath(wk.ID) }
+						hx-confirm="delete this workout?"
+					>delete</button>
+				</div>
+			}
 		</div>
 		if wk.Description != "" {
 			<p class="muted">{ wk.Description }</p>

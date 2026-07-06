@@ -5,7 +5,7 @@ import "github.com/Aejkatappaja/go-gym/internal/store"
 // WorkoutForm renders the create/edit form. action is the hx-post target,
 // heading the terminal-style title.
 templ WorkoutForm(username string, wk store.Workout, errMsg, action, heading string) {
-	@AppLayout(username) {
+	@AppLayout(username, false) {
 		<div class="sec-head">
 			<h1 class="title"><span class="p">$</span> { heading }</h1>
 			<a class="btn" href="/app">cancel</a>

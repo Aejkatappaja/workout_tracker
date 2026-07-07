@@ -56,7 +56,7 @@ func NewApplication() (*Application, error) {
 	tokenHandler := api.NewTokenHandler(tokenStore, userStore, logger)
 	exerciseHandler := api.NewExerciseHandler(exerciseStore, logger)
 	middlewareHandler := middleware.UserMiddleware{UserStore: userStore}
-	webHandler := web.NewHandler(userStore, tokenStore, workoutStore, logger, mailer)
+	webHandler := web.NewHandler(userStore, tokenStore, workoutStore, exerciseStore, logger, mailer)
 
 	app := &Application{
 		Logger:          logger,

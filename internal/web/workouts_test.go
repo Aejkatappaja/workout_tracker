@@ -58,7 +58,7 @@ func (f *fakeWorkoutStore) ListWorkoutsByUser(userID int) ([]store.Workout, erro
 }
 
 func handlerWith(ws store.WorkoutStore) *Handler {
-	return NewHandler(nil, nil, ws, log.New(io.Discard, "", 0), nil)
+	return NewHandler(nil, nil, ws, nil, log.New(io.Discard, "", 0), nil)
 }
 
 // webReq builds a request with an optional form body, chi {id} param and user context.

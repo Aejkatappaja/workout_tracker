@@ -149,6 +149,32 @@ func (h *Handler) EntryRow(w http.ResponseWriter, r *http.Request) {
 	h.render(w, r, http.StatusOK, views.EntryRow(store.WorkoutEntry{}))
 }
 
+// ExerciseSearch returns the typeahead dropdown fragment for the exercise input.
+// HTMX sends the input's value under its own name (entry_exercise).
+func (h *Handler) ExerciseSearch(w http.ResponseWriter, r *http.Request) {
+	q := strings.TrimSpace(r.URL.Query().Get("entry_exercise"))
+	if q == "" {
+		h.render(w, r, http.StatusOK, views.ExerciseSuggest(nil, "", false))
+		return
+	}
+	exercises, err := h.exercises.Search(q, 6)
+	if err != nil {
+		h.logger.Printf("ERROR: web exercise search: %v", err)
+		h.render(w, r, http.StatusOK, views.ExerciseSuggest(nil, q, false))
+		return
+	}
+	// exact catalog match -> no "create" affordance
+	exact := false
+	lq := strings.ToLower(q)
+	for _, e := range exercises {
+		if e.Name == lq {
+			exact = true
+			break
+		}
+	}
+	h.render(w, r, http.StatusOK, views.ExerciseSuggest(exercises, q, exact))
+}
+
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	if h.readOnly(r) {
 		w.Header().Set("HX-Redirect", "/app")
@@ -273,6 +299,7 @@ func parseWorkoutForm(r *http.Request) store.Workout {
 	}
 
 	names := r.Form["entry_exercise"]
+	groups := r.Form["entry_muscle_group"]
 	sets := r.Form["entry_sets"]
 	reps := r.Form["entry_reps"]
 	durs := r.Form["entry_duration"]
@@ -286,6 +313,7 @@ func parseWorkoutForm(r *http.Request) store.Workout {
 		}
 		wk.Entries = append(wk.Entries, store.WorkoutEntry{
 			ExerciseName:    strings.TrimSpace(name),
+			MuscleGroup:     strings.TrimSpace(at(groups, i)), // set only when creating a new exercise
 			Sets:            atoiOr0(at(sets, i)),
 			Reps:            atoiPtr(at(reps, i)),
 			DurationSeconds: atoiPtr(at(durs, i)),

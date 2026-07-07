@@ -36,6 +36,34 @@ document.addEventListener("click", (e) => {
   }
 });
 
+// exercise typeahead: pick a catalog match, or explicitly create a new exercise
+// with a chosen muscle group. Click outside closes the dropdown. Delegated (works
+// for HTMX-added rows) and CSP-clean (no inline JS).
+document.addEventListener("click", (e) => {
+  if (!e.target.closest) return;
+  const create = e.target.closest("[data-ex-create]");
+  const pick = e.target.closest("[data-ex-pick]");
+  const node = create || pick;
+  if (node) {
+    const row = node.closest(".entry-row");
+    const input = row && row.querySelector('input[name="entry_exercise"]');
+    const group = row && row.querySelector('input[name="entry_muscle_group"]');
+    if (create) {
+      if (input) input.value = create.getAttribute("data-ex-name");
+      if (group) group.value = create.getAttribute("data-ex-create"); // new -> chosen group
+    } else {
+      if (input) input.value = pick.getAttribute("data-ex-pick");
+      if (group) group.value = ""; // existing catalog entry keeps its group
+    }
+    const suggest = row && row.querySelector(".ex-suggest");
+    if (suggest) suggest.innerHTML = "";
+    return;
+  }
+  if (!e.target.closest(".ex-field")) {
+    document.querySelectorAll(".ex-suggest").forEach((s) => { s.innerHTML = ""; });
+  }
+});
+
 // Lock a form on submit so a double-click can't create duplicates: disable the
 // submit button and mark fields read-only. readOnly (not disabled) keeps the
 // values in the POST / HTMX serialization. Re-enabled automatically when the page

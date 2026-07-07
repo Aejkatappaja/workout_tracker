@@ -329,6 +329,55 @@
   .entry-row > * { min-width: 0; }
   .entry-row input { width: 100%; }
   .entry-row input:read-only { opacity: 0.35; cursor: not-allowed; }
+  /* exercise typeahead dropdown */
+  .ex-field { position: relative; }
+  .ex-suggest {
+    position: absolute;
+    z-index: 20;
+    left: 0; right: 0; top: 100%;
+    margin-top: 2px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  }
+  .ex-list { list-style: none; margin: 0; padding: 0; }
+  .ex-list li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    font-size: 12.5px;
+    color: var(--fg);
+    cursor: pointer;
+  }
+  .ex-list li:hover { background: var(--bg-cursor); color: var(--fg-bright); }
+  .ex-mg { color: var(--comment); font-size: 11px; }
+  /* explicit "create" affordance (keeps the catalog clean vs silent typos) */
+  .ex-create {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    cursor: default;
+    border-top: 1px solid var(--border);
+  }
+  .ex-create:hover { background: none; color: inherit; }
+  .ex-create-label { color: var(--comment); font-size: 11px; }
+  .ex-groups { display: flex; flex-wrap: wrap; gap: 4px; }
+  .ex-g {
+    font-size: 10.5px;
+    color: var(--steel);
+    background: var(--bg-float);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 2px 6px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color var(--t), color var(--t);
+  }
+  .ex-g:hover { border-color: var(--cyan); color: var(--fg-bright); }
   @media (max-width: 640px) {
     .row2 { grid-template-columns: 1fr; }
     .entry-row { grid-template-columns: 1fr 1fr; }

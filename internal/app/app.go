@@ -17,14 +17,15 @@ import (
 )
 
 type Application struct {
-	Logger          *log.Logger
-	WorkoutHandler  *api.WorkoutHandler
-	UserHandler     *api.UserHandler
-	TokenHandler    *api.TokenHandler
-	ExerciseHandler *api.ExerciseHandler
-	MiddleWare      middleware.UserMiddleware
-	WebHandler      *web.Handler
-	DB              *sql.DB
+	Logger           *log.Logger
+	WorkoutHandler   *api.WorkoutHandler
+	UserHandler      *api.UserHandler
+	TokenHandler     *api.TokenHandler
+	ExerciseHandler  *api.ExerciseHandler
+	AnalyticsHandler *api.AnalyticsHandler
+	MiddleWare       middleware.UserMiddleware
+	WebHandler       *web.Handler
+	DB               *sql.DB
 }
 
 func NewApplication() (*Application, error) {
@@ -48,6 +49,7 @@ func NewApplication() (*Application, error) {
 	userStore := store.NewPostgresUserStore(pgDB)
 	tokenStore := store.NewPostgresTokenStore(pgDB)
 	exerciseStore := store.NewPostgresExerciseStore(pgDB)
+	analyticsStore := store.NewPostgresAnalyticsStore(pgDB)
 
 	mailer := mail.New(logger, os.Getenv("RESEND_API_KEY"), os.Getenv("MAIL_FROM"))
 
@@ -55,18 +57,20 @@ func NewApplication() (*Application, error) {
 	userHandler := api.NewUserHandler(userStore, logger)
 	tokenHandler := api.NewTokenHandler(tokenStore, userStore, logger)
 	exerciseHandler := api.NewExerciseHandler(exerciseStore, logger)
+	analyticsHandler := api.NewAnalyticsHandler(analyticsStore, logger)
 	middlewareHandler := middleware.UserMiddleware{UserStore: userStore}
-	webHandler := web.NewHandler(userStore, tokenStore, workoutStore, exerciseStore, logger, mailer)
+	webHandler := web.NewHandler(userStore, tokenStore, workoutStore, exerciseStore, analyticsStore, logger, mailer)
 
 	app := &Application{
-		Logger:          logger,
-		WorkoutHandler:  workoutHandler,
-		UserHandler:     userHandler,
-		TokenHandler:    tokenHandler,
-		ExerciseHandler: exerciseHandler,
-		MiddleWare:      middlewareHandler,
-		WebHandler:      webHandler,
-		DB:              pgDB,
+		Logger:           logger,
+		WorkoutHandler:   workoutHandler,
+		UserHandler:      userHandler,
+		TokenHandler:     tokenHandler,
+		ExerciseHandler:  exerciseHandler,
+		AnalyticsHandler: analyticsHandler,
+		MiddleWare:       middlewareHandler,
+		WebHandler:       webHandler,
+		DB:               pgDB,
 	}
 
 	return app, nil

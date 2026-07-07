@@ -44,12 +44,17 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Put("/workouts/{id}", app.MiddleWare.RequireUser(app.WorkoutHandler.HandleUpdatedWorkoutByID))
 		r.Delete("/workouts/{id}", app.MiddleWare.RequireUser(app.WorkoutHandler.DeleteWorkout))
 
+		r.Get("/exercises/{id}/progress", app.MiddleWare.RequireUser(app.AnalyticsHandler.HandleExerciseProgress))
+		r.Get("/records", app.MiddleWare.RequireUser(app.AnalyticsHandler.HandlePersonalRecords))
+
 		// web routes that need the authenticated user in context
 		r.Post("/logout", app.WebHandler.Logout)
 
 		// browser UI (server-rendered HTMX), redirects anonymous users to /login
 		r.Get("/", app.WebHandler.Root)
 		r.Get("/app", app.MiddleWare.RequireUserWeb(app.WebHandler.Dashboard))
+		r.Get("/app/progress", app.MiddleWare.RequireUserWeb(app.WebHandler.Progress))
+		r.Get("/app/exercises/{id}", app.MiddleWare.RequireUserWeb(app.WebHandler.ExerciseProgress))
 		r.Get("/app/workouts/new", app.MiddleWare.RequireUserWeb(app.WebHandler.NewForm))
 		r.Get("/app/workouts/entry-row", app.MiddleWare.RequireUserWeb(app.WebHandler.EntryRow))
 		r.Get("/app/exercises/search", app.MiddleWare.RequireUserWeb(app.WebHandler.ExerciseSearch))

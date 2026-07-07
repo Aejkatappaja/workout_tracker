@@ -76,11 +76,11 @@ func (f *fakeTokenStore) DeleteAllTokensForUser(userID int, scope string) error 
 }
 
 func newTestHandler(users store.UserStore, toks store.TokenStore) *Handler {
-	return NewHandler(users, toks, nil, nil, log.New(io.Discard, "", 0), &fakeMailer{})
+	return NewHandler(users, toks, nil, nil, nil, log.New(io.Discard, "", 0), &fakeMailer{})
 }
 
 func newTestHandlerMail(users store.UserStore, toks store.TokenStore, m *fakeMailer) *Handler {
-	return NewHandler(users, toks, nil, nil, log.New(io.Discard, "", 0), m)
+	return NewHandler(users, toks, nil, nil, nil, log.New(io.Discard, "", 0), m)
 }
 
 func formPost(target, body string) *http.Request {

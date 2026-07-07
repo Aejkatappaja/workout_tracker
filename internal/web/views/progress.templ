@@ -1,0 +1,62 @@
+package views
+
+import "github.com/Aejkatappaja/go-gym/internal/store"
+
+// LineChartSVG renders a progression line chart from precomputed geometry.
+// Per-point <title> gives a native hover tooltip with no JS.
+templ LineChartSVG(c LineChart) {
+	if c.Empty {
+		<p class="muted">no weighted sets logged yet, add some reps and weight to see progress.</p>
+	} else {
+		<svg class="chart" viewBox="0 0 640 220" role="img" aria-label={ c.Summary }>
+			for _, t := range c.Ticks {
+				<line class="chart-grid" x1="44" x2="626" y1={ t.Y } y2={ t.Y }></line>
+				<text class="chart-ylabel" x="38" y={ t.Y }>{ t.Label }</text>
+			}
+			<path class="chart-area" d={ c.Area }></path>
+			<polyline class="chart-line" points={ c.Line }></polyline>
+			for _, d := range c.Dots {
+				<circle class="chart-dot" cx={ d.Cx } cy={ d.Cy } r="3.5"><title>{ d.Title }</title></circle>
+			}
+			<text class="chart-xlabel" x="44" y="214">{ c.X0 }</text>
+			<text class="chart-xlabel chart-xlabel-end" x="626" y="214">{ c.X1 }</text>
+		</svg>
+	}
+}
+
+templ ProgressPage(username string, records []store.PersonalRecord, readOnly bool) {
+	@AppLayout(username, readOnly) {
+		<a class="back" href="/app"><span class="mn">❮</span> back</a>
+		<div class="sec-head">
+			<h1 class="title"><span class="p">$</span> cat records.md</h1>
+			<span class="aside">personal records</span>
+		</div>
+		if len(records) == 0 {
+			<p class="muted">log some weighted sets to see your records.</p>
+		} else {
+			<div class="pr-grid">
+				for _, pr := range records {
+					<a class="tile pr-card" href={ templ.SafeURL(exerciseProgressPath(pr.ExerciseID)) }>
+						<div class="pr-top">
+							<span class="pr-name">{ pr.Exercise }</span>
+							<span class="chip">{ pr.MuscleGroup }</span>
+						</div>
+						<div class="pr-e1rm">{ fmtFloat0(pr.E1RM) }<span class="pr-unit">e1RM</span></div>
+						<div class="pr-detail">{ fmtFloat0(pr.Weight) } × { itoa(pr.Reps) } · { pr.Day }</div>
+					</a>
+				}
+			</div>
+		}
+	}
+}
+
+templ ExerciseProgressPage(username, exerciseName string, chart LineChart, readOnly bool) {
+	@AppLayout(username, readOnly) {
+		<a class="back" href="/app/progress"><span class="mn">❮</span> back</a>
+		<div class="sec-head">
+			<h1 class="title"><span class="p">$</span> plot { exerciseName }</h1>
+			<span class="aside">estimated 1RM</span>
+		</div>
+		@LineChartSVG(chart)
+	}
+}

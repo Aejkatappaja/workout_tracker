@@ -31,5 +31,8 @@ func zeroBlank(n int) string {
 	return strconv.Itoa(n)
 }
 
-func workoutPath(id int) string     { return fmt.Sprintf("/app/workouts/%d", id) }
-func workoutEditPath(id int) string { return fmt.Sprintf("/app/workouts/%d/edit", id) }
+func workoutPath(id int) string          { return fmt.Sprintf("/app/workouts/%d", id) }
+func workoutEditPath(id int) string      { return fmt.Sprintf("/app/workouts/%d/edit", id) }
+func exerciseProgressPath(id int) string { return fmt.Sprintf("/app/exercises/%d", id) }
+
+func fmtFloat0(f float64) string { return strconv.FormatFloat(f, 'f', 0, 64) }

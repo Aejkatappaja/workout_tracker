@@ -5,6 +5,7 @@ templ AppLayout(username string, readOnly bool) {
 		<header class="topbar">
 			<a class="brand" href="/app">~<span class="slash">/</span>workouts</a>
 			<nav>
+				<a class="nav-link" href="/app/progress">records</a>
 				if readOnly {
 					<span class="badge-demo">demo · read-only</span>
 				}

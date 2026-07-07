@@ -150,3 +150,14 @@ HTTP 200
 [Asserts]
 jsonpath "$.exercises" count > 0
 jsonpath "$.exercises[0].name" matches "^bench"
+
+# Personal records (authenticated)
+GET http://localhost:8080/records
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.records" count >= 0
+
+# Records require auth
+GET http://localhost:8080/records
+HTTP 401

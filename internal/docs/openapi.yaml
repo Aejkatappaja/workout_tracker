@@ -13,6 +13,7 @@ tags:
   - name: Auth
   - name: Workouts
   - name: Catalog
+  - name: Progress
   - name: System
 
 components:
@@ -37,6 +38,24 @@ components:
         muscle_group:
           type: string
           enum: [chest, back, legs, shoulders, arms, core, cardio, other]
+
+    ProgressPoint:
+      type: object
+      properties:
+        day: { type: string, example: "2026-07-07" }
+        e1rm: { type: number, description: "estimated 1-rep max (Epley)" }
+        volume: { type: number, description: "sets * reps * weight that day" }
+
+    PersonalRecord:
+      type: object
+      properties:
+        exercise_id: { type: integer }
+        exercise: { type: string }
+        muscle_group: { type: string }
+        weight: { type: number }
+        reps: { type: integer }
+        e1rm: { type: number }
+        day: { type: string }
 
     RegisterRequest:
       type: object
@@ -129,6 +148,47 @@ paths:
                   exercises:
                     type: array
                     items: { $ref: "#/components/schemas/Exercise" }
+
+  /records:
+    get:
+      tags: [Progress]
+      summary: Personal records (best e1RM per exercise)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: The caller's PRs, strongest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items: { $ref: "#/components/schemas/PersonalRecord" }
+        "401": { description: Unauthorized }
+
+  /exercises/{id}/progress:
+    get:
+      tags: [Progress]
+      summary: Progression curve for one exercise
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Daily best e1RM + volume, oldest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  progress:
+                    type: array
+                    items: { $ref: "#/components/schemas/ProgressPoint" }
+        "401": { description: Unauthorized }
 
   /users:
     post:

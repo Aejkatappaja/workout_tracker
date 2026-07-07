@@ -46,10 +46,18 @@ func RequestLogger(base *slog.Logger) func(http.Handler) http.Handler {
 			start := time.Now()
 			next.ServeHTTP(ww, r.WithContext(ctx))
 
+			// A handler that writes a body (or only headers, like an HTMX
+			// HX-Redirect) without calling WriteHeader leaves Status() at 0,
+			// while net/http sends an implicit 200. Report that 200.
+			status := ww.Status()
+			if status == 0 {
+				status = http.StatusOK
+			}
+
 			l.Info("request",
-				slog.Int("status", ww.Status()),
+				slog.Int("status", status),
 				slog.Int("bytes", ww.BytesWritten()),
-				slog.Duration("duration", time.Since(start)),
+				slog.Float64("duration_ms", float64(time.Since(start).Microseconds())/1000),
 			)
 		})
 	}

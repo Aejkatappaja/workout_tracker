@@ -24,6 +24,16 @@ func TestExerciseCatalog(t *testing.T) {
 	for _, e := range res {
 		assert.True(t, strings.HasPrefix(e.Name, "bench"), "prefix search: %q", e.Name)
 	}
+
+	// Get resolves a known id, and returns (nil, nil) for an unknown one
+	got, err := es.Get(res[0].ID)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, res[0].Name, got.Name)
+
+	missing, err := es.Get(0)
+	require.NoError(t, err)
+	assert.Nil(t, missing, "unknown id returns (nil, nil)")
 }
 
 func TestGetOrCreateExerciseViaWorkout(t *testing.T) {

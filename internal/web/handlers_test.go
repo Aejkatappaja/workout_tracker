@@ -96,6 +96,7 @@ func sessionCookie(rec *httptest.ResponseRecorder) *http.Cookie {
 }
 
 func neoWithPassword(t *testing.T) *store.User {
+	t.Helper()
 	u := &store.User{ID: 1, Username: "neo", Email: "neo@x.io"}
 	require.NoError(t, u.PasswordHash.Set("whiterabbit"))
 	return u

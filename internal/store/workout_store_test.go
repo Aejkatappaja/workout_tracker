@@ -13,6 +13,7 @@ import (
 )
 
 func setupTestDB(t *testing.T) *sql.DB {
+	t.Helper()
 	db, err := sql.Open("pgx", "host=localhost user=postgres password=postgres dbname=postgres port=5433 sslmode=disable")
 	if err != nil {
 		t.Fatalf("opening test db %v", err)
@@ -32,6 +33,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 }
 
 func createTestUser(t *testing.T, db *sql.DB) int {
+	t.Helper()
 	var id int
 	err := db.QueryRow(
 		`INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id`,

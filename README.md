@@ -10,15 +10,23 @@
 
 A training log built twice over one Go backend: a documented **JSON REST API** (bearer tokens) and a **server-rendered web UI** (templ + HTMX, cookie sessions). One set of stores, two consumers.
 
+<p align="center">
+  <img src="assets/progress.png" alt="Progress page: personal-record cards and a weekly training-volume bar chart" width="720"/>
+  <br/>
+  <sub>Progress page: personal records and weekly volume, rendered as server-side SVG (no charting library).</sub>
+</p>
+
 ## Features
 
-- **Two front doors, one backend**: the same PostgreSQL stores serve a JSON API for programmatic clients and an HTMX web UI for the browser.
+- **Two front doors, one backend**: the same PostgreSQL stores serve a JSON API for programmatic clients and an HTMX web UI for the browser. One set of store interfaces, two consumers, no duplication.
+- **Progress analytics, charted by hand**: personal-record cards, an estimated-1RM (Epley) progression line chart, and a weekly training-volume bar chart, all rendered as **server-side SVG with no JavaScript charting library**. Queries use window functions / `DISTINCT ON` for PRs and `date_trunc` for weekly rollups.
+- **Exercise catalog with typeahead**: a normalized `exercises` table with prefix search over a Postgres **`pg_trgm` GIN index**, wired to an HTMX typeahead that dedupes case-insensitively and lets you create a new exercise with a muscle group inline.
 - **Dual-transport auth**: one opaque token (SHA-256 hashed at rest, scoped, expirable) carried either as a `Bearer` header (API) or an `HttpOnly` session cookie (web).
-- **Password reset & welcome email**: a forgot/reset flow with a 1-hour, single-use, hashed token, plus a welcome email on signup, delivered through a swappable mailer (Resend in production, logged to the console in dev).
 - **Owner-scoped by construction**: workouts are user-scoped down to the SQL (`WHERE id AND user_id`); cross-user access returns `403`/`404`, never leaks.
-- **Structured workouts**: each workout holds ordered exercises tracking either reps or duration, exactly one, enforced by a DB `CHECK` and surfaced as inline validation in the UI.
-- **Embedded migrations**: Goose migrations run automatically on startup.
-- **Interface-based stores**: handlers depend on store interfaces, so they unit-test without a database.
+- **Structured workouts + activity heatmap**: each workout holds ordered exercises tracking either reps or duration, exactly one, enforced by a DB `CHECK` and surfaced as inline validation; the dashboard renders a GitHub-style activity heatmap computed in a single grouped query.
+- **Transactional + scheduled email**: welcome and password-reset emails, plus a **weekly training-recap** background job (sessions, volume, best lift). All delivered through a swappable mailer (Resend in production, logged to the console in dev). The reset flow uses a 1-hour, single-use, hashed token; the recap job is idempotent (at most one per user per 7 days).
+- **Structured observability**: `log/slog` with JSON output in production, one access-log line per request, and a per-request id propagated through the context so every error is correlated to the request that caused it.
+- **Interface-based stores**: handlers depend on store interfaces, so they unit-test without a database; embedded Goose migrations run automatically on startup.
 - **Interactive docs**: OpenAPI 3.1 spec served with a Scalar UI at `/docs`.
 - **Tested and linted**: unit, integration and end-to-end tests; `go vet`, `gofmt`, `golangci-lint` and `templ` drift checks enforced in CI.
 
@@ -29,7 +37,7 @@ A training log built twice over one Go backend: a documented **JSON REST API** (
         Browser ──────session cookie─────────┤
                                              ▼
                               chi router + middleware
-                RealIP · SecurityHeaders · BodyLimit(1 MiB) · rate-limit
+      RealIP · RequestID · request-log(slog) · Recoverer · SecurityHeaders · BodyLimit · rate-limit
                                              │
                           Authenticate (header, else cookie fallback)
                                              │
@@ -38,23 +46,26 @@ A training log built twice over one Go backend: a documented **JSON REST API** (
              internal/api (JSON)                         internal/web (templ + HTMX)
                      └───────────────────────┬───────────────────────┘
                                              ▼
-                    stores (interfaces): User · Token · Workout
+     stores (interfaces): User · Token · Workout · Exercise · Analytics · Recap
                                              │
                            PostgreSQL (pgx) · Goose migrations
-
-    mail.Mailer (Resend │ log)  ◀── welcome + password-reset emails
+                                             ▲
+    weekly-recap scheduler ──────────────────┘   (background ticker, on when mail configured)
+    mail.Mailer (Resend │ log)  ◀── welcome · password-reset · weekly-recap emails
 ```
 
 Both surfaces share one middleware chain, one `Authenticate` step, and one set of
 store interfaces; only the rendering (JSON vs HTML) and the auth-failure behaviour
-(`401` vs redirect to `/login`) differ.
+(`401` vs redirect to `/login`) differ. A background scheduler reuses the same
+stores and mailer to send weekly recaps.
 
 ## Stack
 
 - **Go 1.25** with [Chi](https://github.com/go-chi/chi) router
 - **PostgreSQL** via [pgx](https://github.com/jackc/pgx), migrations by [Goose](https://github.com/pressly/goose)
-- **Web UI**: [templ](https://templ.guide) typed components + [HTMX](https://htmx.org), hand-written CSS, no build step (assets embedded)
+- **Web UI**: [templ](https://templ.guide) typed components + [HTMX](https://htmx.org), hand-written CSS and hand-rolled SVG charts, no build step (assets embedded)
 - **Transactional email** via [Resend](https://resend.com) behind a swappable `Mailer` interface (logs to the console when unconfigured)
+- **Observability**: `log/slog` structured logging with per-request id correlation
 - **Docker Compose** for local dev (app DB + test DB)
 
 ## JSON API
@@ -68,6 +79,9 @@ store interfaces; only the rendering (JSON vs HTML) and the auth-failure behavio
 | `POST` | `/workouts` | Bearer | Create a workout |
 | `PUT` | `/workouts/{id}` | Bearer | Update a workout |
 | `DELETE` | `/workouts/{id}` | Bearer | Delete a workout |
+| `GET` | `/records` | Bearer | Personal records (best e1RM per exercise) |
+| `GET` | `/exercises/{id}/progress` | Bearer | e1RM + volume progression for one exercise |
+| `GET` | `/exercises` | Public | Prefix search the exercise catalog (typeahead) |
 | `GET` | `/health` | Public | Health check |
 | `GET` | `/docs` | Public | Interactive API docs (Scalar) |
 | `GET` | `/openapi.yaml` | Public | OpenAPI 3.1 spec |
@@ -80,14 +94,18 @@ Server-rendered pages (cookie session) under `/`:
 
 - `/login`, `/register`, and logout wired to the same auth as the API.
 - `/forgot` and `/reset`: request a reset link and set a new password.
-- `/app` dashboard listing your workouts.
-- `/app/workouts/new` and `/app/workouts/{id}/edit`: forms with add/remove exercise rows (HTMX), reps and duration locked mutually exclusive.
+- `/app` dashboard listing your workouts, with an activity heatmap.
+- `/app/workouts/new` and `/app/workouts/{id}/edit`: forms with add/remove exercise rows (HTMX), an exercise typeahead, and reps/duration locked mutually exclusive.
 - `/app/workouts/{id}`: detail with the exercise table, edit and delete.
+- `/app/progress`: personal-record cards and a weekly training-volume bar chart.
+- `/app/exercises/{id}`: an estimated-1RM progression line chart for one exercise.
 
 ## Data model
 
 - `users` -> `tokens` (bearer, SHA-256 hashed, scoped, expirable)
 - `users` -> `workouts` -> `workout_entries` (sets, reps or duration, weight, order)
+- `workout_entries` -> `exercises` (normalized catalog: unique name, muscle group, `pg_trgm` index)
+- `users.last_recap_sent_at` gates the weekly recap job (at most one email per 7 days)
 
 Each entry tracks **either reps or duration**, never both and never neither, enforced by a `CHECK` constraint.
 
@@ -102,6 +120,14 @@ Each entry tracks **either reps or duration**, never both and never neither, enf
 - **CSRF**: state-changing requests rely on `SameSite=Lax` cookies; the JSON API authenticates with a bearer header, which a browser cannot send cross-site.
 
 In production, point `DATABASE_URL` at a connection string with `sslmode=require` (or `verify-full`) so database traffic is encrypted. The local Docker default uses `sslmode=disable`.
+
+## Observability
+
+`log/slog` backs all logging: `LOG_FORMAT=json` emits structured JSON (for log aggregation), otherwise human-readable text, with the level set by `LOG_LEVEL`. A middleware assigns each request an id (`chi` RequestID) and logs one access line with method, path, status, response size and latency. Handlers log through a request-scoped logger pulled from the context, so every error carries the same `req_id` and can be traced back to the exact request:
+
+```json
+{"time":"...","level":"INFO","msg":"request","req_id":"…","method":"POST","path":"/app/workouts","status":200,"bytes":0,"duration_ms":21.3}
+```
 
 ## Run
 
@@ -191,12 +217,13 @@ internal/
 ├── api/          # JSON handlers
 ├── app/          # config, DI wiring
 ├── docs/         # OpenAPI spec + Scalar UI
-├── middleware/   # auth (bearer header or session cookie)
+├── middleware/   # auth (bearer header or session cookie), request logging
+├── recap/        # weekly-recap email scheduler
 ├── routes/       # route definitions
 ├── store/        # PostgreSQL repositories (interface-based)
 ├── tokens/       # token generation + hashing
 ├── utils/        # request/response helpers
-└── web/          # server-rendered HTMX UI (templ views, static assets)
+└── web/          # server-rendered HTMX UI (templ views, static assets, SVG charts)
 migrations/       # Goose SQL migrations
 scripts/          # smoke.sh end-to-end check
 api.hurl          # Hurl e2e for the JSON API

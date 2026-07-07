@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="g" cx="0.5" cy="0.3" r="0.85">
+      <stop offset="0" stop-color="#7cc7e0" stop-opacity="0.13"/>
+      <stop offset="1" stop-color="#7cc7e0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7cc7e0" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#7cc7e0"/>
+      <stop offset="1" stop-color="#b39ae0" stop-opacity="0"/>
+    </linearGradient>
+    <symbol id="gopher" viewBox="0 0 120 158" overflow="visible">
+      <ellipse cx="44" cy="150" rx="13" ry="8" fill="#3a4553"/>
+      <ellipse cx="76" cy="150" rx="13" ry="8" fill="#3a4553"/>
+      <circle cx="33" cy="24" r="12" fill="currentColor"/>
+      <circle cx="33" cy="24" r="5.5" fill="#3a4553"/>
+      <circle cx="87" cy="24" r="12" fill="currentColor"/>
+      <circle cx="87" cy="24" r="5.5" fill="#3a4553"/>
+      <ellipse cx="60" cy="86" rx="47" ry="64" fill="currentColor"/>
+      <ellipse cx="60" cy="100" rx="31" ry="44" fill="#ffffff" opacity="0.16"/>
+      <circle cx="40" cy="44" r="21" fill="#f3f5fb"/>
+      <circle cx="80" cy="44" r="21" fill="#f3f5fb"/>
+      <circle cx="48" cy="49" r="9" fill="#15171e"/>
+      <circle cx="72" cy="49" r="9" fill="#15171e"/>
+      <circle cx="51.5" cy="45.5" r="2.6" fill="#f3f5fb"/>
+      <circle cx="75.5" cy="45.5" r="2.6" fill="#f3f5fb"/>
+      <ellipse cx="60" cy="63" rx="6.5" ry="5" fill="#15171e"/>
+      <rect x="51.5" y="69" width="17" height="17" rx="3.5" fill="#f3f5fb" stroke="#cdd2df" stroke-width="1"/>
+      <line x1="60" y1="69" x2="60" y2="86" stroke="#cdd2df" stroke-width="1"/>
+    </symbol>
+  </defs>
+
+  <rect width="1200" height="630" fill="#0e1018"/>
+  <rect width="1200" height="630" fill="url(#g)"/>
+
+  <!-- three gophers, centered row -->
+  <use href="#gopher" x="452" y="70" width="120" height="158" color="#80c8e0"/>
+  <use href="#gopher" x="540" y="60" width="120" height="158" color="#8fd6ad"/>
+  <use href="#gopher" x="628" y="70" width="120" height="158" color="#dcc17f"/>
+
+  <g font-family="ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace" text-anchor="middle">
+    <text x="600" y="360" font-size="92" font-weight="700" fill="#d9c07a">~<tspan fill="#7cc7e0">/</tspan>GO-GYM</text>
+    <rect x="360" y="392" width="480" height="3" fill="url(#rule)"/>
+    <text x="600" y="452" font-size="30" fill="#c9cfd9">a training log, built twice over one Go backend</text>
+
+    <g font-size="23" fill="#9aa7bd">
+      <rect x="378" y="500" width="130" height="44" rx="6" fill="#171a22" stroke="#2b2f3d" stroke-width="1.5"/>
+      <text x="443" y="529">Go · Chi</text>
+      <rect x="520" y="500" width="104" height="44" rx="6" fill="#171a22" stroke="#2b2f3d" stroke-width="1.5"/>
+      <text x="572" y="529">templ</text>
+      <rect x="636" y="500" width="100" height="44" rx="6" fill="#171a22" stroke="#2b2f3d" stroke-width="1.5"/>
+      <text x="686" y="529">HTMX</text>
+      <rect x="748" y="500" width="156" height="44" rx="6" fill="#171a22" stroke="#2b2f3d" stroke-width="1.5"/>
+      <text x="826" y="529">PostgreSQL</text>
+    </g>
+
+    <text x="600" y="596" font-size="20" fill="#6b7590">go-gym.aejkatappaja.com</text>
+  </g>
+</svg>

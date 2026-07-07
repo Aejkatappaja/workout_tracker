@@ -64,6 +64,8 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 	r.Get("/docs", docs.UI)
 	r.Get("/openapi.yaml", docs.Spec)
 
+	r.Get("/exercises", app.ExerciseHandler.HandleSearchExercises)
+
 	r.With(authLimit).Post("/users", app.UserHandler.HandleRegisterUser)
 	r.With(authLimit).Post("/tokens/authentication", app.TokenHandler.HandleCreateToken)
 

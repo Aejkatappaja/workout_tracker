@@ -12,6 +12,7 @@ servers:
 tags:
   - name: Auth
   - name: Workouts
+  - name: Catalog
   - name: System
 
 components:
@@ -27,6 +28,15 @@ components:
         error:
           type: string
       required: [error]
+
+    Exercise:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        muscle_group:
+          type: string
+          enum: [chest, back, legs, shoulders, arms, core, cardio, other]
 
     RegisterRequest:
       type: object
@@ -97,6 +107,28 @@ paths:
           content:
             text/plain:
               schema: { type: string, example: "Status is available!" }
+
+  /exercises:
+    get:
+      tags: [Catalog]
+      summary: Search the exercise catalog
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+          description: Prefix matched against exercise names (case-insensitive)
+      responses:
+        "200":
+          description: Matching exercises
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exercises:
+                    type: array
+                    items: { $ref: "#/components/schemas/Exercise" }
 
   /users:
     post:

@@ -17,13 +17,14 @@ import (
 )
 
 type Application struct {
-	Logger         *log.Logger
-	WorkoutHandler *api.WorkoutHandler
-	UserHandler    *api.UserHandler
-	TokenHandler   *api.TokenHandler
-	MiddleWare     middleware.UserMiddleware
-	WebHandler     *web.Handler
-	DB             *sql.DB
+	Logger          *log.Logger
+	WorkoutHandler  *api.WorkoutHandler
+	UserHandler     *api.UserHandler
+	TokenHandler    *api.TokenHandler
+	ExerciseHandler *api.ExerciseHandler
+	MiddleWare      middleware.UserMiddleware
+	WebHandler      *web.Handler
+	DB              *sql.DB
 }
 
 func NewApplication() (*Application, error) {
@@ -46,23 +47,26 @@ func NewApplication() (*Application, error) {
 	workoutStore := store.NewPostgresWorkoutStore(pgDB)
 	userStore := store.NewPostgresUserStore(pgDB)
 	tokenStore := store.NewPostgresTokenStore(pgDB)
+	exerciseStore := store.NewPostgresExerciseStore(pgDB)
 
 	mailer := mail.New(logger, os.Getenv("RESEND_API_KEY"), os.Getenv("MAIL_FROM"))
 
 	workoutHandler := api.NewWorkoutHandler(workoutStore, logger)
 	userHandler := api.NewUserHandler(userStore, logger)
 	tokenHandler := api.NewTokenHandler(tokenStore, userStore, logger)
+	exerciseHandler := api.NewExerciseHandler(exerciseStore, logger)
 	middlewareHandler := middleware.UserMiddleware{UserStore: userStore}
 	webHandler := web.NewHandler(userStore, tokenStore, workoutStore, logger, mailer)
 
 	app := &Application{
-		Logger:         logger,
-		WorkoutHandler: workoutHandler,
-		UserHandler:    userHandler,
-		TokenHandler:   tokenHandler,
-		MiddleWare:     middlewareHandler,
-		WebHandler:     webHandler,
-		DB:             pgDB,
+		Logger:          logger,
+		WorkoutHandler:  workoutHandler,
+		UserHandler:     userHandler,
+		TokenHandler:    tokenHandler,
+		ExerciseHandler: exerciseHandler,
+		MiddleWare:      middlewareHandler,
+		WebHandler:      webHandler,
+		DB:              pgDB,
 	}
 
 	return app, nil

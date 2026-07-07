@@ -24,7 +24,25 @@ templ LineChartSVG(c LineChart) {
 	}
 }
 
-templ ProgressPage(username string, records []store.PersonalRecord, readOnly bool) {
+// BarChartSVG renders a weekly-volume bar chart from precomputed geometry.
+templ BarChartSVG(c BarChart) {
+	if c.Empty {
+		<p class="muted">no weighted sets logged yet, add some reps and weight to see volume.</p>
+	} else {
+		<svg class="chart" viewBox="0 0 640 220" role="img" aria-label={ c.Summary }>
+			for _, t := range c.Ticks {
+				<line class="chart-grid" x1="44" x2="626" y1={ t.Y } y2={ t.Y }></line>
+				<text class="chart-ylabel" x="38" y={ t.Y }>{ t.Label }</text>
+			}
+			for _, b := range c.Bars {
+				<rect class="chart-bar" x={ b.X } y={ b.Y } width={ b.W } height={ b.H } rx="2"><title>{ b.Title }</title></rect>
+				<text class="chart-xlabel chart-xlabel-mid" x={ b.LabelX } y="214">{ b.Label }</text>
+			}
+		</svg>
+	}
+}
+
+templ ProgressPage(username string, records []store.PersonalRecord, volume BarChart, readOnly bool) {
 	@AppLayout(username, readOnly) {
 		<a class="back" href="/app"><span class="mn">❮</span> back</a>
 		<div class="sec-head">
@@ -46,6 +64,11 @@ templ ProgressPage(username string, records []store.PersonalRecord, readOnly boo
 					</a>
 				}
 			</div>
+			<div class="sec-head">
+				<h1 class="title"><span class="p">$</span> plot volume/week</h1>
+				<span class="aside">weekly volume</span>
+			</div>
+			@BarChartSVG(volume)
 		}
 	}
 }

@@ -51,4 +51,10 @@ func TestAnalytics(t *testing.T) {
 	assert.Equal(t, "squat", prs[0].Exercise)
 	assert.InDelta(t, 140*(1+5.0/30), prs[0].E1RM, 0.01)
 	assert.Equal(t, "bench press", prs[1].Exercise)
+
+	// weekly volume: both sets land in one week, 3*5*100 + 3*5*140 = 3600
+	vol, err := as.WeeklyVolume(userID, 12)
+	require.NoError(t, err)
+	require.Len(t, vol, 1)
+	assert.InDelta(t, 3600.0, vol[0].Volume, 0.01)
 }

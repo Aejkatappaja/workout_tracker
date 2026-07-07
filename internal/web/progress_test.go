@@ -21,6 +21,7 @@ func (f *fakeExerciseStore) Get(int) (*store.Exercise, error)             { retu
 type fakeAnalyticsStore struct {
 	records  []store.PersonalRecord
 	progress []store.ProgressPoint
+	volume   []store.VolumePoint
 }
 
 func (f *fakeAnalyticsStore) PersonalRecords(int) ([]store.PersonalRecord, error) {
@@ -29,15 +30,24 @@ func (f *fakeAnalyticsStore) PersonalRecords(int) ([]store.PersonalRecord, error
 func (f *fakeAnalyticsStore) ExerciseProgress(int, int) ([]store.ProgressPoint, error) {
 	return f.progress, nil
 }
+func (f *fakeAnalyticsStore) WeeklyVolume(int, int) ([]store.VolumePoint, error) {
+	return f.volume, nil
+}
 
 func progressHandler(ex store.ExerciseStore, an store.AnalyticsStore) *Handler {
 	return NewHandler(nil, nil, nil, ex, an, log.New(io.Discard, "", 0), nil)
 }
 
 func TestProgress(t *testing.T) {
-	an := &fakeAnalyticsStore{records: []store.PersonalRecord{
-		{ExerciseID: 3, Exercise: "bench press", MuscleGroup: "chest", Weight: 100, Reps: 5, E1RM: 116, Day: "2026-07-01"},
-	}}
+	an := &fakeAnalyticsStore{
+		records: []store.PersonalRecord{
+			{ExerciseID: 3, Exercise: "bench press", MuscleGroup: "chest", Weight: 100, Reps: 5, E1RM: 116, Day: "2026-07-01"},
+		},
+		volume: []store.VolumePoint{
+			{Week: "2026-06-22", Volume: 1500},
+			{Week: "2026-06-29", Volume: 1800},
+		},
+	}
 	h := progressHandler(&fakeExerciseStore{}, an)
 
 	rec := httptest.NewRecorder()
@@ -47,6 +57,7 @@ func TestProgress(t *testing.T) {
 	body := rec.Body.String()
 	assert.Contains(t, body, "bench press")
 	assert.Contains(t, body, "/app/exercises/3", "PR card links to the exercise progress page")
+	assert.Contains(t, body, "chart-bar", "renders the weekly volume bar chart")
 }
 
 func TestExerciseProgress(t *testing.T) {

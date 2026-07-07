@@ -16,7 +16,12 @@ func (h *Handler) Progress(w http.ResponseWriter, r *http.Request) {
 		h.logger.Printf("ERROR: web PersonalRecords: %v", err)
 		records = nil
 	}
-	h.render(w, r, http.StatusOK, views.ProgressPage(user.Username, records, h.readOnly(r)))
+	volume, err := h.analytics.WeeklyVolume(user.ID, 12)
+	if err != nil {
+		h.logger.Printf("ERROR: web WeeklyVolume: %v", err)
+		volume = nil
+	}
+	h.render(w, r, http.StatusOK, views.ProgressPage(user.Username, records, views.BuildBarChart(volume), h.readOnly(r)))
 }
 
 // ExerciseProgress shows one exercise's e1RM progression line chart.

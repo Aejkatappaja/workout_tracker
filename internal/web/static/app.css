@@ -247,6 +247,9 @@
   .chart-area { fill: color-mix(in srgb, var(--cyan) 14%, transparent); stroke: none; }
   .chart-line { fill: none; stroke: var(--cyan); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
   .chart-dot { fill: var(--bg); stroke: var(--cyan); stroke-width: 2; }
+  .chart-xlabel-mid { text-anchor: middle; }
+  .chart-bar { fill: color-mix(in srgb, var(--cyan) 55%, transparent); transition: fill var(--t); }
+  .chart-bar:hover { fill: var(--cyan); }
 
   /* buttons */
   .btn {

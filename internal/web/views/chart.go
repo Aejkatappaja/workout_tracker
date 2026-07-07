@@ -39,6 +39,21 @@ type LineChart struct {
 	Summary string // aria-label / caption
 }
 
+type chartBar struct {
+	X, Y, W, H string
+	LabelX     string // centered x for the week tick label
+	Label      string // short week label (MM-DD)
+	Title      string // hover/accessibility label
+}
+
+// BarChart holds the precomputed SVG geometry for a weekly-volume bar chart.
+type BarChart struct {
+	Empty   bool
+	Bars    []chartBar
+	Ticks   []chartTick
+	Summary string
+}
+
 func f1(v float64) string { return strconv.FormatFloat(v, 'f', 1, 64) }
 
 // BuildLineChart maps progression points to SVG coordinates. Values are the daily
@@ -116,4 +131,68 @@ func BuildLineChart(points []store.ProgressPoint) LineChart {
 		X1:      points[len(points)-1].Day,
 		Summary: fmt.Sprintf("estimated 1RM over %d sessions, from %.0f to %.0f", len(points), points[0].E1RM, points[len(points)-1].E1RM),
 	}
+}
+
+// BuildBarChart maps weekly volume points to SVG bars, oldest week first. The y
+// axis runs from 0 so bar heights read as absolute volume.
+func BuildBarChart(points []store.VolumePoint) BarChart {
+	if len(points) == 0 {
+		return BarChart{Empty: true}
+	}
+
+	maxV := points[0].Volume
+	var total float64
+	for _, p := range points {
+		total += p.Volume
+		if p.Volume > maxV {
+			maxV = p.Volume
+		}
+	}
+	hi := maxV * 1.1 // headroom above the tallest bar
+	if hi < 1 {
+		hi = 1
+	}
+
+	innerW := float64(chartW - padL - padR)
+	innerH := float64(chartH - padT - padB)
+	baseY := float64(chartH - padB)
+	slot := innerW / float64(len(points))
+	bw := slot * 0.6 // bar width, leaving gaps between weeks
+
+	bars := make([]chartBar, 0, len(points))
+	for i, p := range points {
+		h := innerH * (p.Volume / hi)
+		bx := padL + slot*float64(i) + (slot-bw)/2
+		by := baseY - h
+		bars = append(bars, chartBar{
+			X:      f1(bx),
+			Y:      f1(by),
+			W:      f1(bw),
+			H:      f1(h),
+			LabelX: f1(bx + bw/2),
+			Label:  weekLabel(p.Week),
+			Title:  fmt.Sprintf("week of %s · %.0f", p.Week, p.Volume),
+		})
+	}
+
+	ticks := make([]chartTick, 0, 3)
+	for _, frac := range []float64{0, 0.5, 1} {
+		v := hi * frac
+		y := padT + innerH*(1-frac)
+		ticks = append(ticks, chartTick{Y: f1(y), Label: strconv.FormatFloat(v, 'f', 0, 64)})
+	}
+
+	return BarChart{
+		Bars:    bars,
+		Ticks:   ticks,
+		Summary: fmt.Sprintf("weekly training volume over %d weeks, %.0f total", len(points), total),
+	}
+}
+
+// weekLabel shortens a YYYY-MM-DD week start to MM-DD for the x axis.
+func weekLabel(week string) string {
+	if len(week) == 10 {
+		return week[5:]
+	}
+	return week
 }

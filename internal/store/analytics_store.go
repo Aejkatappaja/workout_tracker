@@ -20,9 +20,16 @@ type PersonalRecord struct {
 	Day         string  `json:"day"`
 }
 
+// VolumePoint is one week's total training volume (sets*reps*weight).
+type VolumePoint struct {
+	Week   string  `json:"week"`   // YYYY-MM-DD, the week's Monday (UTC)
+	Volume float64 `json:"volume"` // total sets*reps*weight that week
+}
+
 type AnalyticsStore interface {
 	ExerciseProgress(userID, exerciseID int) ([]ProgressPoint, error)
 	PersonalRecords(userID int) ([]PersonalRecord, error)
+	WeeklyVolume(userID, weeks int) ([]VolumePoint, error)
 }
 
 type PostgresAnalyticsStore struct {
@@ -98,4 +105,38 @@ func (s *PostgresAnalyticsStore) PersonalRecords(userID int) ([]PersonalRecord, 
 		records = append(records, pr)
 	}
 	return records, rows.Err()
+}
+
+// WeeklyVolume returns total training volume per week for the most recent `weeks`
+// weeks that have any weighted sets, oldest first. Weeks with no logged weight are
+// absent (gaps are not zero-filled).
+func (s *PostgresAnalyticsStore) WeeklyVolume(userID, weeks int) ([]VolumePoint, error) {
+	query := `
+	SELECT week, volume FROM (
+	  SELECT to_char(date_trunc('week', w.created_at AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS week,
+	         COALESCE(SUM(e.sets * e.reps * e.weight), 0) AS volume
+	  FROM workout_entries e
+	  JOIN workouts w ON w.id = e.workout_id
+	  WHERE w.user_id = $1 AND e.reps IS NOT NULL AND e.weight IS NOT NULL
+	  GROUP BY week
+	  ORDER BY week DESC
+	  LIMIT $2
+	) recent
+	ORDER BY week`
+
+	rows, err := s.db.Query(query, userID, weeks)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	points := []VolumePoint{}
+	for rows.Next() {
+		var p VolumePoint
+		if err := rows.Scan(&p.Week, &p.Volume); err != nil {
+			return nil, err
+		}
+		points = append(points, p)
+	}
+	return points, rows.Err()
 }

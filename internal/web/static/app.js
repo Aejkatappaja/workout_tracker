@@ -36,6 +36,23 @@ document.addEventListener("click", (e) => {
   }
 });
 
+// Lock a form on submit so a double-click can't create duplicates: disable the
+// submit button and mark fields read-only. readOnly (not disabled) keeps the
+// values in the POST / HTMX serialization. Re-enabled automatically when the page
+// reloads or HTMX swaps the body. Native validation blocks submit, so an invalid
+// form never locks.
+document.addEventListener("submit", (e) => {
+  const form = e.target;
+  if (!(form instanceof HTMLFormElement)) return;
+  form.querySelectorAll('button[type="submit"], button:not([type])').forEach((b) => {
+    b.disabled = true;
+    b.setAttribute("aria-busy", "true");
+  });
+  form.querySelectorAll("input, textarea").forEach((el) => {
+    el.readOnly = true;
+  });
+});
+
 // Auth gopher: pupils drift toward the caret as the user types, and the arms rise
 // to cover the eyes while a HIDDEN password field is focused. Revealing the
 // password (show/hide toggle) uncovers the eyes, like the classic peeking login.

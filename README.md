@@ -74,7 +74,7 @@ stores and mailer to send weekly recaps.
 |--------|-------|------|-------------|
 | `POST` | `/users` | Public | Register |
 | `POST` | `/tokens/authentication` | Public | Login (returns a bearer token) |
-| `GET` | `/workouts` | Bearer | List the caller's workouts |
+| `GET` | `/workouts` | Bearer | List the caller's workouts (keyset paginated: `?limit=&cursor=`, `next_cursor` in the response) |
 | `GET` | `/workouts/{id}` | Bearer | Get a workout with its entries |
 | `POST` | `/workouts` | Bearer | Create a workout |
 | `PUT` | `/workouts/{id}` | Bearer | Update a workout |
@@ -94,7 +94,7 @@ Server-rendered pages (cookie session) under `/`:
 
 - `/login`, `/register`, and logout wired to the same auth as the API.
 - `/forgot` and `/reset`: request a reset link and set a new password.
-- `/app` dashboard listing your workouts, with an activity heatmap.
+- `/app` dashboard listing your workouts (paginated with an HTMX "load more"), with an activity heatmap. Totals come from a SQL aggregate, not by loading every row.
 - `/app/workouts/new` and `/app/workouts/{id}/edit`: forms with add/remove exercise rows (HTMX), an exercise typeahead, and reps/duration locked mutually exclusive.
 - `/app/workouts/{id}`: detail with the exercise table, edit and delete.
 - `/app/progress`: personal-record cards and a weekly training-volume bar chart.

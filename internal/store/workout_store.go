@@ -45,8 +45,17 @@ type WorkoutStore interface {
 	UpdateWorkout(*Workout) error
 	DeleteWorkoutByID(id int64, userID int) error
 	GetWorkoutOwner(id int64) (int, error)
-	ListWorkoutsByUser(userID int) ([]Workout, error)
+	ListWorkoutsByUser(userID int, cursor int64, limit int) ([]Workout, error)
+	WorkoutStats(userID int) (WorkoutSummary, error)
 	WorkoutCountsByDay(userID int, since time.Time) (map[string]int, error)
+}
+
+// WorkoutSummary is a user's aggregate totals, computed in SQL so the dashboard
+// never loads every row just to count them.
+type WorkoutSummary struct {
+	Sessions int
+	Minutes  int
+	Calories int
 }
 
 // insertWorkoutEntries inserts all entries in a single statement and assigns the
@@ -149,17 +158,20 @@ func (pg *PostgresWorkoutStore) CreateWorkout(workout *Workout) (*Workout, error
 	return workout, nil
 }
 
-// ListWorkoutsByUser returns the user's workouts without their entries (the list
-// view only needs the summary; the detail view loads entries via GetWorkoutByID).
-func (pg *PostgresWorkoutStore) ListWorkoutsByUser(userID int) ([]Workout, error) {
+// ListWorkoutsByUser returns a page of the user's workouts without their entries
+// (the list view only needs the summary; the detail view loads entries via
+// GetWorkoutByID). Pagination is keyset on the descending id: cursor is the last
+// id seen (0 for the first page), which stays stable under inserts, unlike OFFSET.
+func (pg *PostgresWorkoutStore) ListWorkoutsByUser(userID int, cursor int64, limit int) ([]Workout, error) {
 	query := `
 	SELECT id, user_id, title, description, duration_minutes, calories_burned
 	FROM workouts
-	WHERE user_id = $1
+	WHERE user_id = $1 AND ($2 = 0 OR id < $2)
 	ORDER BY id DESC
+	LIMIT $3
 	`
 
-	rows, err := pg.db.Query(query, userID)
+	rows, err := pg.db.Query(query, userID, cursor, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -174,6 +186,18 @@ func (pg *PostgresWorkoutStore) ListWorkoutsByUser(userID int) ([]Workout, error
 		workouts = append(workouts, w)
 	}
 	return workouts, rows.Err()
+}
+
+// WorkoutStats returns the user's aggregate totals in a single grouped query.
+func (pg *PostgresWorkoutStore) WorkoutStats(userID int) (WorkoutSummary, error) {
+	var s WorkoutSummary
+	err := pg.db.QueryRow(`
+	SELECT COUNT(*),
+	       COALESCE(SUM(duration_minutes), 0),
+	       COALESCE(SUM(calories_burned), 0)
+	FROM workouts
+	WHERE user_id = $1`, userID).Scan(&s.Sessions, &s.Minutes, &s.Calories)
+	return s, err
 }
 
 // WorkoutCountsByDay returns, for the user, the number of workouts created per

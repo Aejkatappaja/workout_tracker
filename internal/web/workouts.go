@@ -69,12 +69,23 @@ func (h *Handler) readOnly(r *http.Request) bool {
 	return middleware.GetUser(r).Username == store.DemoUsername
 }
 
-const activityWeeks = 16
+const (
+	activityWeeks     = 16
+	dashboardPageSize = 20
+)
 
 func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUser(r)
 
-	workouts, err := h.workouts.ListWorkoutsByUser(user.ID)
+	// totals come from a SQL aggregate, so the dashboard never loads every row
+	// just to count them.
+	summary, err := h.workouts.WorkoutStats(user.ID)
+	if err != nil {
+		h.serverError(w, r, "web dashboard stats", err)
+		return
+	}
+
+	workouts, err := h.workouts.ListWorkoutsByUser(user.ID, 0, dashboardPageSize)
 	if err != nil {
 		h.serverError(w, r, "web dashboard list", err)
 		return
@@ -87,14 +98,35 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stats := views.Stats{Sessions: len(workouts)}
-	for _, wk := range workouts {
-		stats.Minutes += wk.DurationMinutes
-		stats.Calories += wk.CaloriesBurned
-	}
+	stats := views.Stats{Sessions: summary.Sessions, Minutes: summary.Minutes, Calories: summary.Calories}
 	activity := views.BuildActivity(counts, activityWeeks, time.Now())
 
-	h.render(w, r, http.StatusOK, views.Dashboard(user.Username, workouts, stats, activity, h.readOnly(r)))
+	h.render(w, r, http.StatusOK, views.Dashboard(user.Username, workouts, nextCursor(workouts), stats, activity, h.readOnly(r)))
+}
+
+// WorkoutsPage returns the next page of workout cards as an HTMX fragment, driven
+// by the load-more button's ?cursor (the last id shown).
+func (h *Handler) WorkoutsPage(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUser(r)
+	cursor, err := strconv.ParseInt(r.URL.Query().Get("cursor"), 10, 64)
+	if err != nil || cursor < 0 {
+		cursor = 0
+	}
+
+	workouts, err := h.workouts.ListWorkoutsByUser(user.ID, cursor, dashboardPageSize)
+	if err != nil {
+		h.serverError(w, r, "web workouts page", err)
+		return
+	}
+	h.render(w, r, http.StatusOK, views.WorkoutCards(workouts, nextCursor(workouts)))
+}
+
+// nextCursor is the id to page from next, or 0 when this was the last page.
+func nextCursor(workouts []store.Workout) int64 {
+	if len(workouts) < dashboardPageSize {
+		return 0
+	}
+	return int64(workouts[len(workouts)-1].ID)
 }
 
 // loadOwnedWorkout fetches a workout by the {id} param and checks ownership.

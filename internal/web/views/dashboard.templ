@@ -2,7 +2,7 @@ package views
 
 import "github.com/Aejkatappaja/go-gym/internal/store"
 
-templ Dashboard(username string, workouts []store.Workout, stats Stats, activity Activity, readOnly bool) {
+templ Dashboard(username string, workouts []store.Workout, nextCursor int64, stats Stats, activity Activity, readOnly bool) {
 	@AppLayout(username, readOnly) {
 		if readOnly {
 			<div class="demo-banner">
@@ -34,11 +34,26 @@ templ Dashboard(username string, workouts []store.Workout, stats Stats, activity
 			<p class="muted">no workouts yet. <a href="/app/workouts/new">create your first</a>.</p>
 		} else {
 			<div class="list">
-				for _, wk := range workouts {
-					@WorkoutCard(wk)
-				}
+				@WorkoutCards(workouts, nextCursor)
 			</div>
 		}
+	}
+}
+
+// WorkoutCards renders a page of cards plus, when more remain, a load-more button
+// that swaps itself for the next page (HTMX outerHTML). Used by the dashboard and
+// the /app/workouts/page fragment endpoint.
+templ WorkoutCards(workouts []store.Workout, nextCursor int64) {
+	for _, wk := range workouts {
+		@WorkoutCard(wk)
+	}
+	if nextCursor > 0 {
+		<button
+			class="btn load-more"
+			hx-get={ "/app/workouts/page?cursor=" + itoa64(nextCursor) }
+			hx-target="this"
+			hx-swap="outerHTML"
+		>load more</button>
 	}
 }
 

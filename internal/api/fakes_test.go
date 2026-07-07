@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"time"
 
 	"github.com/Aejkatappaja/go-gym/internal/middleware"
@@ -71,14 +72,30 @@ func (f *fakeWorkoutStore) DeleteWorkoutByID(id int64, userID int) error {
 	return nil
 }
 
-func (f *fakeWorkoutStore) ListWorkoutsByUser(userID int) ([]store.Workout, error) {
+func (f *fakeWorkoutStore) ListWorkoutsByUser(userID int, cursor int64, limit int) ([]store.Workout, error) {
 	out := []store.Workout{}
 	for _, w := range f.workouts {
-		if w.UserID == userID {
+		if w.UserID == userID && (cursor == 0 || int64(w.ID) < cursor) {
 			out = append(out, *w)
 		}
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID > out[j].ID })
+	if len(out) > limit {
+		out = out[:limit]
+	}
 	return out, nil
+}
+
+func (f *fakeWorkoutStore) WorkoutStats(userID int) (store.WorkoutSummary, error) {
+	var s store.WorkoutSummary
+	for _, w := range f.workouts {
+		if w.UserID == userID {
+			s.Sessions++
+			s.Minutes += w.DurationMinutes
+			s.Calories += w.CaloriesBurned
+		}
+	}
+	return s, nil
 }
 
 func (f *fakeWorkoutStore) WorkoutCountsByDay(userID int, since time.Time) (map[string]int, error) {

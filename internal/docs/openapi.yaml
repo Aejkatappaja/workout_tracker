@@ -246,8 +246,17 @@ paths:
   /workouts:
     get:
       tags: [Workouts]
-      summary: List the authenticated user's workouts
+      summary: List the authenticated user's workouts (keyset paginated, newest first)
       security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          description: Page size (1-100, default 20)
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: cursor
+          in: query
+          description: Last workout id from the previous page; omit for the first page
+          schema: { type: integer, format: int64 }
       responses:
         "200":
           description: OK (entries are omitted from the list; fetch a workout by id for them)
@@ -259,6 +268,10 @@ paths:
                   workouts:
                     type: array
                     items: { $ref: "#/components/schemas/Workout" }
+                  next_cursor:
+                    type: integer
+                    format: int64
+                    description: Pass as ?cursor for the next page; absent on the last page
         "401": { description: Missing or invalid token }
     post:
       tags: [Workouts]

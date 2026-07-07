@@ -5,7 +5,8 @@ import (
 	"strconv"
 )
 
-func itoa(n int) string { return strconv.Itoa(n) }
+func itoa(n int) string     { return strconv.Itoa(n) }
+func itoa64(n int64) string { return strconv.FormatInt(n, 10) }
 
 // optInt renders a *int as its value or an empty string when nil.
 func optInt(p *int) string {

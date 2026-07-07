@@ -38,6 +38,14 @@ func main() {
 		WriteTimeout: 30 * time.Second,
 	}
 
+	// cancelled on SIGINT / SIGTERM (container stop); also stops the recap loop.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if application.Recap != nil {
+		go application.Recap.Run(ctx, time.Hour)
+	}
+
 	go func() {
 		application.Logger.Info("listening", "port", port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -46,15 +54,12 @@ func main() {
 		}
 	}()
 
-	// graceful shutdown on SIGINT / SIGTERM (container stop)
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-	<-stop
+	<-ctx.Done()
 
 	application.Logger.Info("shutting down")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := server.Shutdown(ctx); err != nil {
+	if err := server.Shutdown(shutdownCtx); err != nil {
 		application.Logger.Error("graceful shutdown failed", "err", err)
 	}
 }

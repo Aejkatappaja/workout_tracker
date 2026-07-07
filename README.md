@@ -117,6 +117,7 @@ Configuration:
 - `DATABASE_URL` overrides the connection string (defaults to the local Docker DB); use `sslmode=require` in production.
 - `-port` / `PORT` sets the listen port (defaults to `8080`).
 - `RESEND_API_KEY` + `MAIL_FROM` (e.g. `go-gym <noreply@example.com>`) enable real email via Resend; unset, the app logs emails to the console instead.
+- `APP_URL` (e.g. `https://go-gym.example.com`) is the public base URL used in email links. With `APP_URL` and the Resend variables all set, a background job emails each active user a weekly training recap (sessions, volume, best lift); it sends at most once per 7 days per user and skips the demo account.
 - `LOG_FORMAT=json` emits structured JSON logs (set it in production for log aggregation); anything else uses human-readable text. `LOG_LEVEL` (`debug`/`info`/`warn`/`error`, default `info`) sets the minimum level. Each request is logged once with its method, path, status, size, latency and a `req_id` that also tags any error logged while handling it.
 
 Editing `.templ` views requires regenerating the Go (the generated files are committed):

@@ -12,6 +12,7 @@ import (
 	"github.com/Aejkatappaja/go-gym/internal/api"
 	"github.com/Aejkatappaja/go-gym/internal/mail"
 	"github.com/Aejkatappaja/go-gym/internal/middleware"
+	"github.com/Aejkatappaja/go-gym/internal/recap"
 	"github.com/Aejkatappaja/go-gym/internal/store"
 	"github.com/Aejkatappaja/go-gym/internal/web"
 	"github.com/Aejkatappaja/go-gym/migrations"
@@ -26,6 +27,7 @@ type Application struct {
 	AnalyticsHandler *api.AnalyticsHandler
 	MiddleWare       middleware.UserMiddleware
 	WebHandler       *web.Handler
+	Recap            *recap.Service // nil when recap email is not configured
 	DB               *sql.DB
 }
 
@@ -52,7 +54,18 @@ func NewApplication() (*Application, error) {
 	exerciseStore := store.NewPostgresExerciseStore(pgDB)
 	analyticsStore := store.NewPostgresAnalyticsStore(pgDB)
 
-	mailer := mail.New(logger, os.Getenv("RESEND_API_KEY"), os.Getenv("MAIL_FROM"))
+	resendKey, mailFrom := os.Getenv("RESEND_API_KEY"), os.Getenv("MAIL_FROM")
+	mailer := mail.New(logger, resendKey, mailFrom)
+
+	// Weekly recap runs only when real email delivery is configured (Resend key +
+	// from address) and a public base URL is known for the email links; otherwise
+	// there is nothing to deliver to, so the scheduler stays off.
+	var recapSvc *recap.Service
+	if appURL := os.Getenv("APP_URL"); resendKey != "" && mailFrom != "" && appURL != "" {
+		recapSvc = recap.NewService(store.NewPostgresRecapStore(pgDB), mailer, logger, appURL)
+	} else {
+		logger.Info("recap: disabled (needs RESEND_API_KEY, MAIL_FROM and APP_URL)")
+	}
 
 	workoutHandler := api.NewWorkoutHandler(workoutStore)
 	userHandler := api.NewUserHandler(userStore)
@@ -71,6 +84,7 @@ func NewApplication() (*Application, error) {
 		AnalyticsHandler: analyticsHandler,
 		MiddleWare:       middlewareHandler,
 		WebHandler:       webHandler,
+		Recap:            recapSvc,
 		DB:               pgDB,
 	}
 

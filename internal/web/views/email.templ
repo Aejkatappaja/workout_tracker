@@ -1,5 +1,7 @@
 package views
 
+import "github.com/Aejkatappaja/go-gym/internal/store"
+
 // Transactional email templates. Email clients strip <style>/classes and don't
 // support CSS custom properties, so the Sora palette is inlined as hex on a
 // table layout: bg #0e1018, card #171a22, border #2a2f3c, text #c9cfd9 /
@@ -57,6 +59,42 @@ templ ResetEmail(resetURL string) {
 		</div>
 		<div style="color:#8b93a3;font-size:12px;line-height:1.6;padding-top:18px">
 			If you didn't request this, you can ignore this email. Your password won't change.
+		</div>
+	}
+}
+
+// recapStat renders one label/value metric cell for the recap email.
+templ recapStat(label, value string) {
+	<td style="padding:0 8px" width="33%" align="center">
+		<div style="color:#e8ebf1;font-size:22px;font-weight:700">{ value }</div>
+		<div style="color:#8b93a3;font-size:11px;padding-top:4px">{ label }</div>
+	</td>
+}
+
+templ RecapEmail(username string, s store.RecapSummary, appURL string) {
+	@emailFrame("Your week on go-gym") {
+		<div style="color:#e8ebf1;font-size:16px;font-weight:600;padding-bottom:10px">your week, { username }</div>
+		<div style="color:#c9cfd9;font-size:13.5px;line-height:1.7">
+			Here's what you logged over the last 7 days.
+		</div>
+		<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:22px 0">
+			<tr>
+				@recapStat("sessions", itoa(s.Sessions))
+				@recapStat("volume", fmtFloat0(s.Volume))
+				if s.BestExercise != "" {
+					@recapStat("top e1RM", fmtFloat0(s.BestE1RM))
+				} else {
+					@recapStat("top e1RM", "n/a")
+				}
+			</tr>
+		</table>
+		if s.BestExercise != "" {
+			<div style="color:#c9cfd9;font-size:13.5px;line-height:1.7">
+				Best lift of the week: <span style="color:#d4b878;font-weight:600">{ s.BestExercise }</span> at { fmtFloat0(s.BestE1RM) } estimated 1RM.
+			</div>
+		}
+		<div style="padding-top:22px">
+			@emailButton("open go-gym", appURL)
 		</div>
 	}
 }

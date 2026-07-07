@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -19,7 +20,9 @@ type Workout struct {
 
 type WorkoutEntry struct {
 	ID              int      `json:"id"`
-	ExerciseName    string   `json:"exercise_name"`
+	ExerciseID      int      `json:"exercise_id"`
+	ExerciseName    string   `json:"exercise_name"` // input on write, resolved from the catalog on read
+	MuscleGroup     string   `json:"muscle_group"`  // read-only, from the catalog
 	Sets            int      `json:"sets"`
 	Reps            *int     `json:"reps"`
 	DurationSeconds *int     `json:"duration_seconds"`
@@ -55,16 +58,22 @@ func insertWorkoutEntries(tx *sql.Tx, workoutID int, entries []WorkoutEntry) err
 
 	placeholders := make([]string, 0, len(entries))
 	args := make([]interface{}, 0, len(entries)*8)
-	for i, entry := range entries {
+	for i := range entries {
+		exerciseID, err := getOrCreateExercise(tx, entries[i].ExerciseName, entries[i].MuscleGroup)
+		if err != nil {
+			return err
+		}
+		entries[i].ExerciseID = exerciseID
+
 		n := i * 8
 		placeholders = append(placeholders, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
 			n+1, n+2, n+3, n+4, n+5, n+6, n+7, n+8))
-		args = append(args, workoutID, entry.ExerciseName, entry.Sets, entry.Reps,
-			entry.DurationSeconds, entry.Weight, entry.Notes, entry.OrderIndex)
+		args = append(args, workoutID, exerciseID, entries[i].Sets, entries[i].Reps,
+			entries[i].DurationSeconds, entries[i].Weight, entries[i].Notes, entries[i].OrderIndex)
 	}
 
 	query := `
-	INSERT INTO workout_entries (workout_id, exercise_name, sets, reps, duration_seconds, weight, notes, order_index)
+	INSERT INTO workout_entries (workout_id, exercise_id, sets, reps, duration_seconds, weight, notes, order_index)
 	VALUES ` + strings.Join(placeholders, ", ") + `
 	RETURNING id`
 
@@ -82,6 +91,32 @@ func insertWorkoutEntries(tx *sql.Tx, workoutID int, entries []WorkoutEntry) err
 		i++
 	}
 	return rows.Err()
+}
+
+var validMuscleGroups = map[string]bool{
+	"chest": true, "back": true, "legs": true, "shoulders": true,
+	"arms": true, "core": true, "cardio": true, "other": true,
+}
+
+// getOrCreateExercise resolves a free-text exercise name to a catalog row,
+// inserting it (lower-cased, trimmed) if new, and returns its id. muscleGroup is
+// only applied when the row is created; an existing exercise keeps its group.
+// This keeps workout_entries normalized while letting the UI send plain names.
+func getOrCreateExercise(tx *sql.Tx, name, muscleGroup string) (int, error) {
+	n := strings.ToLower(strings.TrimSpace(name))
+	if n == "" {
+		return 0, errors.New("exercise name is required")
+	}
+	group := strings.ToLower(strings.TrimSpace(muscleGroup))
+	if !validMuscleGroups[group] {
+		group = "other"
+	}
+	var id int
+	err := tx.QueryRow(
+		`INSERT INTO exercises (name, muscle_group) VALUES ($1, $2)
+		 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+		 RETURNING id`, n, group).Scan(&id)
+	return id, err
 }
 
 func (pg *PostgresWorkoutStore) CreateWorkout(workout *Workout) (*Workout, error) {
@@ -187,10 +222,11 @@ func (pg *PostgresWorkoutStore) GetWorkoutByID(id int64) (*Workout, error) {
 	}
 
 	entryQuery := `
-	SELECT ID, exercise_name, sets, reps, duration_seconds, weight, notes, order_index
-	FROM workout_entries
-	WHERE workout_id = $1
-	ORDER BY order_index
+	SELECT e.id, e.exercise_id, x.name, x.muscle_group, e.sets, e.reps, e.duration_seconds, e.weight, e.notes, e.order_index
+	FROM workout_entries e
+	JOIN exercises x ON x.id = e.exercise_id
+	WHERE e.workout_id = $1
+	ORDER BY e.order_index
 	`
 
 	rows, err := pg.db.Query(entryQuery, id)
@@ -202,7 +238,7 @@ func (pg *PostgresWorkoutStore) GetWorkoutByID(id int64) (*Workout, error) {
 
 	for rows.Next() {
 		var entry WorkoutEntry
-		err = rows.Scan(&entry.ID, &entry.ExerciseName, &entry.Sets, &entry.Reps, &entry.DurationSeconds, &entry.Weight, &entry.Notes, &entry.OrderIndex)
+		err = rows.Scan(&entry.ID, &entry.ExerciseID, &entry.ExerciseName, &entry.MuscleGroup, &entry.Sets, &entry.Reps, &entry.DurationSeconds, &entry.Weight, &entry.Notes, &entry.OrderIndex)
 		if err != nil {
 			return nil, err
 		}

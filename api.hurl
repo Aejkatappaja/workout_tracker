@@ -143,3 +143,10 @@ HTTP 204
 GET http://localhost:8080/workouts/{{wid}}
 Authorization: Bearer {{token}}
 HTTP 404
+
+# Exercise catalog: prefix search
+GET http://localhost:8080/exercises?q=bench
+HTTP 200
+[Asserts]
+jsonpath "$.exercises" count > 0
+jsonpath "$.exercises[0].name" matches "^bench"

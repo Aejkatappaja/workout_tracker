@@ -77,7 +77,7 @@ func seedWorkouts(db *sql.DB, userID int) error {
 	INSERT INTO workouts (user_id, title, description, duration_minutes, calories_burned, created_at)
 	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 	insertEntry := `
-	INSERT INTO workout_entries (workout_id, exercise_name, sets, reps, duration_seconds, weight, notes, order_index)
+	INSERT INTO workout_entries (workout_id, exercise_id, sets, reps, duration_seconds, weight, notes, order_index)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
 	now := time.Now()
@@ -105,7 +105,11 @@ func seedWorkouts(db *sql.DB, userID int) error {
 		n := 3 + rng.Intn(3) // 3..5 exercises
 		for i := 0; i < n; i++ {
 			e := pool[rng.Intn(len(pool))]
-			if _, err := tx.Exec(insertEntry, workoutID, e.name, e.sets, e.reps, e.duration, e.weight, "", i+1); err != nil {
+			exerciseID, err := getOrCreateExercise(tx, e.name, "")
+			if err != nil {
+				return err
+			}
+			if _, err := tx.Exec(insertEntry, workoutID, exerciseID, e.sets, e.reps, e.duration, e.weight, "", i+1); err != nil {
 				return err
 			}
 		}

@@ -50,7 +50,20 @@ templ WorkoutForm(username string, wk store.Workout, errMsg, action, heading str
 
 templ EntryRow(e store.WorkoutEntry) {
 	<div class="entry-row">
-		<input name="entry_exercise" placeholder="exercise" value={ e.ExerciseName }/>
+		<div class="ex-field">
+			<input
+				name="entry_exercise"
+				placeholder="exercise"
+				value={ e.ExerciseName }
+				autocomplete="off"
+				hx-get="/app/exercises/search"
+				hx-trigger="keyup changed delay:200ms"
+				hx-target="next .ex-suggest"
+				hx-swap="innerHTML"
+			/>
+			<div class="ex-suggest"></div>
+		</div>
+		<input type="hidden" name="entry_muscle_group" value={ e.MuscleGroup }/>
 		<input name="entry_sets" type="number" min="0" placeholder="sets" value={ zeroBlank(e.Sets) }/>
 		<input name="entry_reps" type="number" min="0" placeholder="reps" title="repetitions (rep-based exercise)" value={ optInt(e.Reps) }/>
 		<input name="entry_duration" type="number" min="0" placeholder="secs" title="duration in seconds (time-based exercise)" value={ optInt(e.DurationSeconds) }/>
@@ -58,4 +71,27 @@ templ EntryRow(e store.WorkoutEntry) {
 		<input name="entry_notes" placeholder="notes" value={ e.Notes }/>
 		<button class="btn danger" type="button" aria-label="remove" data-remove-entry>✕</button>
 	</div>
+}
+
+// ExerciseSuggest is the typeahead dropdown: catalog matches for the exercise
+// input. Empty renders nothing so the dropdown clears. app.js fills the row's
+// input from data-ex-pick on click (no inline JS, CSP-clean).
+templ ExerciseSuggest(exercises []store.Exercise, query string, exactMatch bool) {
+	if len(exercises) > 0 || (query != "" && !exactMatch) {
+		<ul class="ex-list">
+			for _, e := range exercises {
+				<li data-ex-pick={ e.Name }>{ e.Name } <span class="ex-mg">{ e.MuscleGroup }</span></li>
+			}
+			if query != "" && !exactMatch {
+				<li class="ex-create">
+					<span class="ex-create-label">＋ create "{ query }" as</span>
+					<span class="ex-groups">
+						for _, g := range muscleGroups {
+							<button type="button" class="ex-g" data-ex-create={ g } data-ex-name={ query }>{ g }</button>
+						}
+					</span>
+				</li>
+			}
+		</ul>
+	}
 }

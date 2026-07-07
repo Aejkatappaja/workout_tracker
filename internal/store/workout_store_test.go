@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"strings"
 	"testing"
 	"time"
 
@@ -127,7 +128,9 @@ func TestCreateWorkout(t *testing.T) {
 			assert.Equal(t, len(tt.workout.Entries), len(retrieved.Entries))
 
 			for i := range retrieved.Entries {
-				assert.Equal(t, tt.workout.Entries[i].ExerciseName, retrieved.Entries[i].ExerciseName)
+				// the catalog normalizes names (lower-cased), so compare case-insensitively
+				assert.True(t, strings.EqualFold(tt.workout.Entries[i].ExerciseName, retrieved.Entries[i].ExerciseName),
+					"exercise name mismatch: %q vs %q", tt.workout.Entries[i].ExerciseName, retrieved.Entries[i].ExerciseName)
 				assert.Equal(t, tt.workout.Entries[i].Sets, retrieved.Entries[i].Sets)
 				assert.Equal(t, tt.workout.Entries[i].OrderIndex, retrieved.Entries[i].OrderIndex)
 			}

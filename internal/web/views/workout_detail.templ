@@ -38,7 +38,7 @@ templ WorkoutDetail(username string, wk store.Workout, readOnly bool) {
 					for _, e := range wk.Entries {
 						<tr>
 							<td>{ itoa(e.OrderIndex) }</td>
-							<td>{ e.ExerciseName }</td>
+							<td>{ e.ExerciseName } <span class="ex-mg">{ e.MuscleGroup }</span></td>
 							<td>{ itoa(e.Sets) }</td>
 							<td>{ optInt(e.Reps) }</td>
 							<td>{ optInt(e.DurationSeconds) }</td>

@@ -52,6 +52,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Get("/app", app.MiddleWare.RequireUserWeb(app.WebHandler.Dashboard))
 		r.Get("/app/workouts/new", app.MiddleWare.RequireUserWeb(app.WebHandler.NewForm))
 		r.Get("/app/workouts/entry-row", app.MiddleWare.RequireUserWeb(app.WebHandler.EntryRow))
+		r.Get("/app/exercises/search", app.MiddleWare.RequireUserWeb(app.WebHandler.ExerciseSearch))
 		r.Post("/app/workouts", app.MiddleWare.RequireUserWeb(app.WebHandler.Create))
 		r.Get("/app/workouts/{id}", app.MiddleWare.RequireUserWeb(app.WebHandler.Detail))
 		r.Get("/app/workouts/{id}/edit", app.MiddleWare.RequireUserWeb(app.WebHandler.EditForm))
@@ -63,6 +64,8 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 
 	r.Get("/docs", docs.UI)
 	r.Get("/openapi.yaml", docs.Spec)
+
+	r.Get("/exercises", app.ExerciseHandler.HandleSearchExercises)
 
 	r.With(authLimit).Post("/users", app.UserHandler.HandleRegisterUser)
 	r.With(authLimit).Post("/tokens/authentication", app.TokenHandler.HandleCreateToken)

@@ -1,8 +1,6 @@
 package web
 
 import (
-	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -35,7 +33,7 @@ func (f *fakeAnalyticsStore) WeeklyVolume(int, int) ([]store.VolumePoint, error)
 }
 
 func progressHandler(ex store.ExerciseStore, an store.AnalyticsStore) *Handler {
-	return NewHandler(nil, nil, nil, ex, an, log.New(io.Discard, "", 0), nil)
+	return NewHandler(nil, nil, nil, ex, an, nil)
 }
 
 func TestProgress(t *testing.T) {

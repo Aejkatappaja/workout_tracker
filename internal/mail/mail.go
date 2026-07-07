@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -21,10 +21,10 @@ type Mailer interface {
 
 // LogMailer writes messages to the logger instead of delivering them. Used when
 // no provider is configured; the reset link is visible in the server log.
-type LogMailer struct{ Logger *log.Logger }
+type LogMailer struct{ Logger *slog.Logger }
 
 func (m LogMailer) Send(_ context.Context, to, subject, _, text string) error {
-	m.Logger.Printf("MAIL (log-only) to=%s subject=%q\n%s", to, subject, text)
+	m.Logger.Info("mail (log-only)", "to", to, "subject", subject, "text", text)
 	return nil
 }
 
@@ -70,10 +70,10 @@ func (m ResendMailer) Send(ctx context.Context, to, subject, html, text string) 
 
 // New returns a ResendMailer when both apiKey and from are set, otherwise a
 // LogMailer.
-func New(logger *log.Logger, apiKey, from string) Mailer {
+func New(logger *slog.Logger, apiKey, from string) Mailer {
 	if apiKey != "" && from != "" {
 		return ResendMailer{apiKey: apiKey, from: from, client: &http.Client{Timeout: 10 * time.Second}}
 	}
-	logger.Printf("mail: RESEND_API_KEY/MAIL_FROM not set, using log-only mailer")
+	logger.Info("mail: RESEND_API_KEY/MAIL_FROM not set, using log-only mailer")
 	return LogMailer{Logger: logger}
 }

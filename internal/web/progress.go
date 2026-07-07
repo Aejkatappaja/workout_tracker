@@ -13,12 +13,12 @@ func (h *Handler) Progress(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUser(r)
 	records, err := h.analytics.PersonalRecords(user.ID)
 	if err != nil {
-		h.logger.Printf("ERROR: web PersonalRecords: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web personal records", "err", err)
 		records = nil
 	}
 	volume, err := h.analytics.WeeklyVolume(user.ID, 12)
 	if err != nil {
-		h.logger.Printf("ERROR: web WeeklyVolume: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web weekly volume", "err", err)
 		volume = nil
 	}
 	h.render(w, r, http.StatusOK, views.ProgressPage(user.Username, records, views.BuildBarChart(volume), h.readOnly(r)))
@@ -35,7 +35,7 @@ func (h *Handler) ExerciseProgress(w http.ResponseWriter, r *http.Request) {
 
 	ex, err := h.exercises.Get(int(id))
 	if err != nil {
-		h.logger.Printf("ERROR: web exercise get: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web exercise get", "err", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -46,7 +46,7 @@ func (h *Handler) ExerciseProgress(w http.ResponseWriter, r *http.Request) {
 
 	points, err := h.analytics.ExerciseProgress(user.ID, int(id))
 	if err != nil {
-		h.logger.Printf("ERROR: web ExerciseProgress: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web exercise progress", "err", err)
 		points = nil
 	}
 

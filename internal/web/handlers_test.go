@@ -2,8 +2,6 @@ package web
 
 import (
 	"context"
-	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -76,11 +74,11 @@ func (f *fakeTokenStore) DeleteAllTokensForUser(userID int, scope string) error 
 }
 
 func newTestHandler(users store.UserStore, toks store.TokenStore) *Handler {
-	return NewHandler(users, toks, nil, nil, nil, log.New(io.Discard, "", 0), &fakeMailer{})
+	return NewHandler(users, toks, nil, nil, nil, &fakeMailer{})
 }
 
 func newTestHandlerMail(users store.UserStore, toks store.TokenStore, m *fakeMailer) *Handler {
-	return NewHandler(users, toks, nil, nil, nil, log.New(io.Discard, "", 0), m)
+	return NewHandler(users, toks, nil, nil, nil, m)
 }
 
 func formPost(target, body string) *http.Request {

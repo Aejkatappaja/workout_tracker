@@ -31,7 +31,7 @@ func TestHandleRegisterUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			us := &fakeUserStore{users: map[string]*store.User{}, createErr: tt.createErr}
-			h := NewUserHandler(us, discardLogger())
+			h := NewUserHandler(us)
 
 			req := httptest.NewRequest(http.MethodPost, "/users", strings.NewReader(tt.body))
 			rec := httptest.NewRecorder()

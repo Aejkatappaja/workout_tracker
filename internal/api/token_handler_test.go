@@ -29,7 +29,7 @@ func TestHandleCreateToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			us := &fakeUserStore{users: map[string]*store.User{"neo": valid}}
-			h := NewTokenHandler(fakeTokenStore{}, us, discardLogger())
+			h := NewTokenHandler(fakeTokenStore{}, us)
 
 			req := httptest.NewRequest(http.MethodPost, "/tokens/authentication", strings.NewReader(tt.body))
 			rec := httptest.NewRecorder()

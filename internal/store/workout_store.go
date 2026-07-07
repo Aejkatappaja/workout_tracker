@@ -231,7 +231,6 @@ func (pg *PostgresWorkoutStore) GetWorkoutByID(id int64) (*Workout, error) {
 
 	rows, err := pg.db.Query(entryQuery, id)
 	if err != nil {
-		fmt.Printf("Error querying workout entries: %v\n", err)
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()

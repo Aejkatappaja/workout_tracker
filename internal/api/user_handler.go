@@ -3,10 +3,10 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"regexp"
 
+	"github.com/Aejkatappaja/go-gym/internal/middleware"
 	"github.com/Aejkatappaja/go-gym/internal/store"
 	"github.com/Aejkatappaja/go-gym/internal/utils"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -21,14 +21,10 @@ type registerUserRequest struct {
 
 type UserHandler struct {
 	userStore store.UserStore
-	logger    *log.Logger
 }
 
-func NewUserHandler(userStore store.UserStore, logger *log.Logger) *UserHandler {
-	return &UserHandler{
-		userStore,
-		logger,
-	}
+func NewUserHandler(userStore store.UserStore) *UserHandler {
+	return &UserHandler{userStore: userStore}
 }
 
 func (h *UserHandler) validateRegisterRequest(req *registerUserRequest) error {
@@ -63,7 +59,7 @@ func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 	var req registerUserRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		h.logger.Printf("ERROR: decoding register request %v", err)
+		middleware.LoggerFrom(r.Context()).Error("decode register request", "err", err)
 		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request payload"})
 		return
 	}
@@ -84,7 +80,7 @@ func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 
 	err = user.PasswordHash.Set(req.Password)
 	if err != nil {
-		h.logger.Printf("ERROR: hashing password %v", err)
+		middleware.LoggerFrom(r.Context()).Error("hash password", "err", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
 		return
 	}
@@ -96,7 +92,7 @@ func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 			utils.WriteJSON(w, http.StatusConflict, utils.Envelope{"error": "username or email already taken"})
 			return
 		}
-		h.logger.Printf("ERROR: registering user %v", err)
+		middleware.LoggerFrom(r.Context()).Error("register user", "err", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
 		return
 	}

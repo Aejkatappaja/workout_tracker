@@ -336,6 +336,8 @@
     .topbar nav { gap: 10px; }
     .topbar .who { display: none; }
     .badge-demo { font-size: 10px; padding: 2px 6px; }
+    /* >=16px stops iOS Safari from zooming the page when a field is focused */
+    input, textarea, select { font-size: 16px; }
   }
   /* tighter gutters on phones so content (incl. the auth card) uses more width */
   @media (max-width: 520px) {

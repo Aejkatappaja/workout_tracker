@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Aejkatappaja/go-gym/internal/middleware"
 	"github.com/Aejkatappaja/go-gym/internal/store"
 	"github.com/Aejkatappaja/go-gym/internal/tokens"
 	"github.com/Aejkatappaja/go-gym/internal/utils"
@@ -30,42 +29,37 @@ func NewTokenHandler(tokenStore store.TokenStore, userStore store.UserStore) *To
 
 func (h *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request) {
 	var req createTokenRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("decode token request", "err", err)
-		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request payload"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		clientError(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
 
 	user, err := h.userStore.GetUserByUsername(req.Username)
 	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("get user by username", "err", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		serverError(w, r, "get user by username", err)
 		return
 	}
 
 	if user == nil {
 		store.FakePasswordCompare() // keep timing constant for unknown usernames
-		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "invalid credentials"})
+		clientError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
 	passwordsDoMatch, err := user.PasswordHash.Matches(req.Password)
 	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("compare password", "err", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		serverError(w, r, "compare password", err)
 		return
 	}
 
 	if !passwordsDoMatch {
-		utils.WriteJSON(w, http.StatusUnauthorized, utils.Envelope{"error": "invalid credentials"})
+		clientError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
 	token, err := h.tokenStore.CreateNewToken(user.ID, 24*time.Hour, tokens.ScopeAuth)
 	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("create token", "err", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		serverError(w, r, "create token", err)
 		return
 	}
 

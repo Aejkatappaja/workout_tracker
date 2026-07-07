@@ -35,7 +35,6 @@ func (f *fakeUserStore) CreateUser(u *store.User) error {
 }
 func (f *fakeUserStore) GetUserByUsername(n string) (*store.User, error) { return f.byName[n], nil }
 func (f *fakeUserStore) GetUserByEmail(e string) (*store.User, error)    { return f.byEmail[e], nil }
-func (f *fakeUserStore) UpdateUser(*store.User) error                    { return nil }
 func (f *fakeUserStore) UpdateUserPassword(_ int, plaintext string) error {
 	f.newPass = plaintext
 	f.pwUpdated = true
@@ -63,7 +62,6 @@ type fakeTokenStore struct {
 	created int
 }
 
-func (fakeTokenStore) Insert(*tokens.Token) error { return nil }
 func (f *fakeTokenStore) CreateNewToken(userID int, ttl time.Duration, scope string) (*tokens.Token, error) {
 	f.created++
 	return &tokens.Token{PlainText: "test-token", UserID: userID, Expiry: time.Now().Add(ttl)}, nil

@@ -35,8 +35,7 @@ func (h *Handler) ExerciseProgress(w http.ResponseWriter, r *http.Request) {
 
 	ex, err := h.exercises.Get(int(id))
 	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("web exercise get", "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		h.serverError(w, r, "web exercise get", err)
 		return
 	}
 	if ex == nil {

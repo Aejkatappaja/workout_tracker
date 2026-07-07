@@ -30,7 +30,9 @@ func SetUser(r *http.Request, user *store.User) *http.Request {
 func GetUser(r *http.Request) *store.User {
 	user, ok := r.Context().Value(UserContextKey).(*store.User)
 	if !ok {
-		panic("missing user in request")
+		// no Authenticate step ran (e.g. a public route); treat as anonymous
+		// rather than panicking so shared helpers stay safe to call.
+		return store.AnonymousUser
 	}
 
 	return user

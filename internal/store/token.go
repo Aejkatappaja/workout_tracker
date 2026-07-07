@@ -18,7 +18,6 @@ func NewPostgresTokenStore(db *sql.DB) *PostgresTokenStore {
 }
 
 type TokenStore interface {
-	Insert(token *tokens.Token) error
 	CreateNewToken(userID int, ttl time.Duration, scope string) (*tokens.Token, error)
 	DeleteAllTokensForUser(userID int, scope string) error
 }
@@ -29,11 +28,11 @@ func (t *PostgresTokenStore) CreateNewToken(UserID int, ttl time.Duration, scope
 		return nil, err
 	}
 
-	err = t.Insert(token)
+	err = t.insert(token)
 	return token, err
 }
 
-func (t *PostgresTokenStore) Insert(token *tokens.Token) error {
+func (t *PostgresTokenStore) insert(token *tokens.Token) error {
 	query := `
 	INSERT INTO tokens (hash, user_id, expiry, scope)
 	VALUES ($1, $2, $3, $4)

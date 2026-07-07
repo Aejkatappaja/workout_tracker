@@ -29,7 +29,7 @@ func TestGenerateToken(t *testing.T) {
 
 func TestGenerateToken_Entropy(t *testing.T) {
 	seen := make(map[string]bool, 1000)
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		tok, err := GenerateToken(1, time.Hour, ScopeAuth)
 		require.NoError(t, err)
 		assert.False(t, seen[tok.PlainText], "duplicate token generated, entropy is broken")

@@ -56,6 +56,17 @@ type BarChart struct {
 
 func f1(v float64) string { return strconv.FormatFloat(v, 'f', 1, 64) }
 
+// axisTicks builds 3 evenly spaced horizontal ticks (bottom, middle, top) across
+// the value range [lo, hi], mapping each value to its y coordinate via yOf.
+func axisTicks(lo, hi float64, yOf func(float64) float64) []chartTick {
+	ticks := make([]chartTick, 0, 3)
+	for _, frac := range []float64{0, 0.5, 1} {
+		v := lo + (hi-lo)*frac
+		ticks = append(ticks, chartTick{Y: f1(yOf(v)), Label: strconv.FormatFloat(v, 'f', 0, 64)})
+	}
+	return ticks
+}
+
 // BuildLineChart maps progression points to SVG coordinates. Values are the daily
 // best e1RM; x is spread evenly by index (days are already ordered oldest-first).
 func BuildLineChart(points []store.ProgressPoint) LineChart {
@@ -116,11 +127,7 @@ func BuildLineChart(points []store.ProgressPoint) LineChart {
 		f1(x(len(points)-1)), f1(chartH-padB))
 
 	// 3 horizontal ticks (lo-ish, mid, hi-ish) using the padded range
-	ticks := make([]chartTick, 0, 3)
-	for _, frac := range []float64{0, 0.5, 1} {
-		v := lo + (hi-lo)*frac
-		ticks = append(ticks, chartTick{Y: f1(y(v)), Label: strconv.FormatFloat(v, 'f', 0, 64)})
-	}
+	ticks := axisTicks(lo, hi, y)
 
 	return LineChart{
 		Line:    line.String(),
@@ -175,12 +182,7 @@ func BuildBarChart(points []store.VolumePoint) BarChart {
 		})
 	}
 
-	ticks := make([]chartTick, 0, 3)
-	for _, frac := range []float64{0, 0.5, 1} {
-		v := hi * frac
-		y := padT + innerH*(1-frac)
-		ticks = append(ticks, chartTick{Y: f1(y), Label: strconv.FormatFloat(v, 'f', 0, 64)})
-	}
+	ticks := axisTicks(0, hi, func(v float64) float64 { return padT + innerH*(1-v/hi) })
 
 	return BarChart{
 		Bars:    bars,

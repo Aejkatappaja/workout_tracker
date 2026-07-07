@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type Envelope map[string]interface{}
+type Envelope map[string]any
 
 // DayKey formats a moment as a civil date ("YYYY-MM-DD") in UTC. Go has no
 // date-only type, so keying on the UTC day keeps the counts query, the heatmap

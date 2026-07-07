@@ -57,7 +57,7 @@ func insertWorkoutEntries(tx *sql.Tx, workoutID int, entries []WorkoutEntry) err
 	}
 
 	placeholders := make([]string, 0, len(entries))
-	args := make([]interface{}, 0, len(entries)*8)
+	args := make([]any, 0, len(entries)*8)
 	for i := range entries {
 		exerciseID, err := getOrCreateExercise(tx, entries[i].ExerciseName, entries[i].MuscleGroup)
 		if err != nil {
@@ -213,7 +213,7 @@ func (pg *PostgresWorkoutStore) GetWorkoutByID(id int64) (*Workout, error) {
 	`
 
 	err := pg.db.QueryRow(query, id).Scan(&workout.ID, &workout.UserID, &workout.Title, &workout.Description, &workout.DurationMinutes, &workout.CaloriesBurned)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

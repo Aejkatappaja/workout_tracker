@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
@@ -31,6 +32,10 @@ type RecapStore interface {
 	// reports whether this call won the claim (false if another already sent since
 	// cutoff), which makes concurrent/duplicate sends safe.
 	MarkRecapSent(userID int, at, cutoff time.Time) (bool, error)
+	// WithLock runs fn while holding a Postgres session advisory lock on key. It
+	// returns ran=false (without calling fn) when another connection already holds
+	// the lock, so the recap scan runs on only one replica at a time.
+	WithLock(ctx context.Context, key int64, fn func() error) (ran bool, err error)
 }
 
 type PostgresRecapStore struct {
@@ -107,4 +112,25 @@ func (s *PostgresRecapStore) MarkRecapSent(userID int, at, cutoff time.Time) (bo
 	}
 	n, err := res.RowsAffected()
 	return n > 0, err
+}
+
+func (s *PostgresRecapStore) WithLock(ctx context.Context, key int64, fn func() error) (bool, error) {
+	// pin one connection: a session advisory lock must be released on the same
+	// connection that took it, which the pool otherwise wouldn't guarantee.
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = conn.Close() }()
+
+	var locked bool
+	if err := conn.QueryRowContext(ctx, "SELECT pg_try_advisory_lock($1)", key).Scan(&locked); err != nil {
+		return false, err
+	}
+	if !locked {
+		return false, nil
+	}
+	defer func() { _, _ = conn.ExecContext(ctx, "SELECT pg_advisory_unlock($1)", key) }()
+
+	return true, fn()
 }

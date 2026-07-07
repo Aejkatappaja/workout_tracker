@@ -1,12 +1,39 @@
 package store
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestRecapStore_WithLock(t *testing.T) {
+	db := setupTestDB(t)
+	defer func() { _ = db.Close() }()
+	rs := NewPostgresRecapStore(db)
+	ctx := context.Background()
+
+	const key = int64(999001)
+	inner := false
+	ran, err := rs.WithLock(ctx, key, func() error {
+		inner = true
+		// a second attempt (different pool connection) must be refused while held
+		ran2, err := rs.WithLock(ctx, key, func() error { return nil })
+		require.NoError(t, err)
+		assert.False(t, ran2, "the lock is not re-entrant across connections")
+		return nil
+	})
+	require.NoError(t, err)
+	assert.True(t, ran)
+	assert.True(t, inner)
+
+	// released after fn returns, so it can be taken again
+	ran, err = rs.WithLock(ctx, key, func() error { return nil })
+	require.NoError(t, err)
+	assert.True(t, ran, "lock is available again after release")
+}
 
 func TestRecapStore(t *testing.T) {
 	db := setupTestDB(t)

@@ -35,6 +35,10 @@ func (f *fakeRecapStore) MarkRecapSent(userID int, _, _ time.Time) (bool, error)
 	return true, nil
 }
 
+func (f *fakeRecapStore) WithLock(_ context.Context, _ int64, fn func() error) (bool, error) {
+	return true, fn()
+}
+
 type fakeMailer struct{ sentTo []string }
 
 func (m *fakeMailer) Send(_ context.Context, to, _, _, _ string) error {

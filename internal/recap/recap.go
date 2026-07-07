@@ -17,6 +17,10 @@ import (
 // for the same user. A user gets at most one recap per 7 days.
 const window = 7 * 24 * time.Hour
 
+// recapLockKey identifies the advisory lock that serializes the recap scan across
+// replicas (arbitrary but stable).
+const recapLockKey int64 = 0x676f67796d // "gogym"
+
 type Service struct {
 	store  store.RecapStore
 	mailer mail.Mailer
@@ -44,9 +48,26 @@ func (s *Service) Run(ctx context.Context, interval time.Duration) {
 	}
 }
 
-// SendDue finds every user due for a recap and emails them. It claims each user
-// before sending (a conditional stamp), so overlapping runs never double-send.
+// SendDue runs the recap scan under an advisory lock so that with multiple
+// replicas only one instance scans per tick (the per-user claim already prevents
+// double-sends; the lock just avoids redundant work).
 func (s *Service) SendDue(ctx context.Context, now time.Time) {
+	ran, err := s.store.WithLock(ctx, recapLockKey, func() error {
+		s.sendDue(ctx, now)
+		return nil
+	})
+	if err != nil {
+		s.logger.Error("recap: advisory lock", "err", err)
+		return
+	}
+	if !ran {
+		s.logger.Info("recap: another instance holds the lock, skipping this tick")
+	}
+}
+
+// sendDue finds every user due for a recap and emails them. It claims each user
+// before sending (a conditional stamp), so overlapping runs never double-send.
+func (s *Service) sendDue(ctx context.Context, now time.Time) {
 	cutoff := now.Add(-window)
 	candidates, err := s.store.DueForRecap(cutoff)
 	if err != nil {

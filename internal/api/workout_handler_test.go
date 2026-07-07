@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -70,6 +71,43 @@ func TestHandleListWorkouts_OnlyOwn(t *testing.T) {
 	for _, w := range body.Workouts {
 		assert.Equal(t, owner.ID, w.UserID)
 	}
+}
+
+func TestHandleListWorkouts_Pagination(t *testing.T) {
+	user := &store.User{ID: 1}
+	fs := newFakeWorkoutStore()
+	for range 5 {
+		_, err := fs.CreateWorkout(&store.Workout{UserID: user.ID, Title: "w"})
+		require.NoError(t, err)
+	}
+	h := NewWorkoutHandler(fs)
+
+	get := func(query string) (workouts []store.Workout, next int64) {
+		rec := httptest.NewRecorder()
+		h.HandleListWorkouts(rec, authedRequest(http.MethodGet, "/workouts"+query, nil, "", user))
+		require.Equal(t, http.StatusOK, rec.Code)
+		var body struct {
+			Workouts   []store.Workout `json:"workouts"`
+			NextCursor int64           `json:"next_cursor"`
+		}
+		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+		return body.Workouts, body.NextCursor
+	}
+
+	// first page of 2 -> 2 items and a next cursor
+	page1, next := get("?limit=2")
+	require.Len(t, page1, 2)
+	require.NotZero(t, next, "a full page yields a next cursor")
+
+	// paging from the cursor continues after the last id seen
+	page2, _ := get("?limit=2&cursor=" + strconv.FormatInt(next, 10))
+	require.Len(t, page2, 2)
+	assert.Less(t, page2[0].ID, page1[1].ID)
+
+	// the last page carries no next cursor
+	all, last := get("?limit=100")
+	assert.Len(t, all, 5)
+	assert.Zero(t, last, "no next cursor on the final page")
 }
 
 func TestHandleCreateWorkout_OverridesClientUserID(t *testing.T) {

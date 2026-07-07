@@ -286,21 +286,40 @@ func TestListWorkoutsByUser(t *testing.T) {
 	userID := createTestUser(t, db)
 
 	// no workouts yet -> empty, non-nil slice
-	empty, err := st.ListWorkoutsByUser(userID)
+	empty, err := st.ListWorkoutsByUser(userID, 0, 10)
 	require.NoError(t, err)
 	assert.Empty(t, empty)
 
 	for _, title := range []string{"push day", "pull day", "leg day"} {
-		_, err := st.CreateWorkout(&Workout{UserID: userID, Title: title, DurationMinutes: 60})
+		_, err := st.CreateWorkout(&Workout{UserID: userID, Title: title, DurationMinutes: 60, CaloriesBurned: 100})
 		require.NoError(t, err)
 	}
 
-	got, err := st.ListWorkoutsByUser(userID)
+	got, err := st.ListWorkoutsByUser(userID, 0, 10)
 	require.NoError(t, err)
 	assert.Len(t, got, 3)
 	// ordered by id DESC (most recent first)
 	assert.Equal(t, "leg day", got[0].Title)
 	assert.Equal(t, userID, got[0].UserID)
+
+	// keyset pagination: first page of 2, then page from the last id
+	page1, err := st.ListWorkoutsByUser(userID, 0, 2)
+	require.NoError(t, err)
+	require.Len(t, page1, 2)
+	assert.Equal(t, "leg day", page1[0].Title)
+	assert.Equal(t, "pull day", page1[1].Title)
+
+	page2, err := st.ListWorkoutsByUser(userID, int64(page1[1].ID), 2)
+	require.NoError(t, err)
+	require.Len(t, page2, 1, "only one workout remains after the cursor")
+	assert.Equal(t, "push day", page2[0].Title)
+
+	// aggregate stats come from SQL, independent of the page size
+	stats, err := st.WorkoutStats(userID)
+	require.NoError(t, err)
+	assert.Equal(t, 3, stats.Sessions)
+	assert.Equal(t, 180, stats.Minutes)
+	assert.Equal(t, 300, stats.Calories)
 }
 
 func TestWorkoutCountsByDay(t *testing.T) {

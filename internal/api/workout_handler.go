@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/Aejkatappaja/go-gym/internal/middleware"
 	"github.com/Aejkatappaja/go-gym/internal/store"
@@ -19,15 +20,49 @@ func NewWorkoutHandler(workoutStore store.WorkoutStore) *WorkoutHandler {
 	return &WorkoutHandler{workoutStore: workoutStore}
 }
 
+const (
+	defaultWorkoutLimit = 20
+	maxWorkoutLimit     = 100
+)
+
 func (wh *WorkoutHandler) HandleListWorkouts(w http.ResponseWriter, r *http.Request) {
 	currentUser := middleware.GetUser(r)
-	workouts, err := wh.workoutStore.ListWorkoutsByUser(currentUser.ID)
+	limit := paginationLimit(r.URL.Query().Get("limit"))
+	cursor := paginationCursor(r.URL.Query().Get("cursor"))
+
+	workouts, err := wh.workoutStore.ListWorkoutsByUser(currentUser.ID, cursor, limit)
 	if err != nil {
 		serverError(w, r, "list workouts", err)
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, utils.Envelope{"workouts": workouts})
+	env := utils.Envelope{"workouts": workouts}
+	// a full page implies there may be more; the next cursor is the last id seen.
+	if len(workouts) == limit {
+		env["next_cursor"] = workouts[len(workouts)-1].ID
+	}
+	utils.WriteJSON(w, http.StatusOK, env)
+}
+
+// paginationLimit clamps ?limit to [1, maxWorkoutLimit], defaulting when unset or invalid.
+func paginationLimit(raw string) int {
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 1 {
+		return defaultWorkoutLimit
+	}
+	if n > maxWorkoutLimit {
+		return maxWorkoutLimit
+	}
+	return n
+}
+
+// paginationCursor parses ?cursor (the last id seen); 0 means "from the start".
+func paginationCursor(raw string) int64 {
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || n < 0 {
+		return 0
+	}
+	return n
 }
 
 func (wh *WorkoutHandler) HandleGetWorkoutByID(w http.ResponseWriter, r *http.Request) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -45,18 +46,59 @@ func (f *fakeWorkoutStore) GetWorkoutOwner(id int64) (int, error) {
 	}
 	return 0, nil
 }
-func (f *fakeWorkoutStore) ListWorkoutsByUser(userID int) ([]store.Workout, error) {
+func (f *fakeWorkoutStore) ListWorkoutsByUser(userID int, cursor int64, limit int) ([]store.Workout, error) {
 	out := []store.Workout{}
 	for _, wk := range f.byID {
-		if wk.UserID == userID {
+		if wk.UserID == userID && (cursor == 0 || int64(wk.ID) < cursor) {
 			out = append(out, *wk)
 		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID > out[j].ID })
+	if len(out) > limit {
+		out = out[:limit]
 	}
 	return out, nil
 }
 
+func (f *fakeWorkoutStore) WorkoutStats(userID int) (store.WorkoutSummary, error) {
+	var s store.WorkoutSummary
+	for _, wk := range f.byID {
+		if wk.UserID == userID {
+			s.Sessions++
+			s.Minutes += wk.DurationMinutes
+			s.Calories += wk.CaloriesBurned
+		}
+	}
+	return s, nil
+}
+
 func handlerWith(ws store.WorkoutStore) *Handler {
 	return NewHandler(nil, nil, ws, nil, nil, nil)
+}
+
+func TestDashboardLoadMore(t *testing.T) {
+	ws := &fakeWorkoutStore{byID: map[int64]*store.Workout{}}
+	for i := 1; i <= dashboardPageSize+3; i++ {
+		ws.byID[int64(i)] = &store.Workout{ID: i, UserID: 1, Title: "w"}
+	}
+	h := handlerWith(ws)
+
+	// more than one page -> dashboard renders a load-more button pointing at the next page
+	rec := httptest.NewRecorder()
+	h.Dashboard(rec, webReq(http.MethodGet, "/app", "", &store.User{ID: 1, Username: "neo"}, ""))
+	require.Equal(t, http.StatusOK, rec.Code)
+	body := rec.Body.String()
+	assert.Contains(t, body, "load-more")
+	// first page is ids desc (23..4), so the next cursor is the last shown id, 4
+	assert.Contains(t, body, "/app/workouts/page?cursor=4")
+
+	// the fragment endpoint returns the remaining cards, without the page layout
+	rec = httptest.NewRecorder()
+	h.WorkoutsPage(rec, webReq(http.MethodGet, "/app/workouts/page?cursor=4", "", &store.User{ID: 1}, ""))
+	require.Equal(t, http.StatusOK, rec.Code)
+	frag := rec.Body.String()
+	assert.NotContains(t, frag, "<html", "fragment is not a full page")
+	assert.NotContains(t, frag, "load-more", "last page has no further button")
 }
 
 // webReq builds a request with an optional form body, chi {id} param and user context.

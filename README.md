@@ -61,7 +61,7 @@ stores and mailer to send weekly recaps.
 
 ## Stack
 
-- **Go 1.25** with [Chi](https://github.com/go-chi/chi) router
+- **Go 1.26** with [Chi](https://github.com/go-chi/chi) router
 - **PostgreSQL** via [pgx](https://github.com/jackc/pgx), migrations by [Goose](https://github.com/pressly/goose)
 - **Web UI**: [templ](https://templ.guide) typed components + [HTMX](https://htmx.org), hand-written CSS and hand-rolled SVG charts, no build step (assets embedded)
 - **Transactional email** via [Resend](https://resend.com) behind a swappable `Mailer` interface (logs to the console when unconfigured)

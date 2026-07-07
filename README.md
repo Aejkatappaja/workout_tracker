@@ -14,6 +14,7 @@ A training log built twice over one Go backend: a documented **JSON REST API** (
 
 - **Two front doors, one backend**: the same PostgreSQL stores serve a JSON API for programmatic clients and an HTMX web UI for the browser.
 - **Dual-transport auth**: one opaque token (SHA-256 hashed at rest, scoped, expirable) carried either as a `Bearer` header (API) or an `HttpOnly` session cookie (web).
+- **Password reset & welcome email**: a forgot/reset flow with a 1-hour, single-use, hashed token, plus a welcome email on signup, delivered through a swappable mailer (Resend in production, logged to the console in dev).
 - **Owner-scoped by construction**: workouts are user-scoped down to the SQL (`WHERE id AND user_id`); cross-user access returns `403`/`404`, never leaks.
 - **Structured workouts**: each workout holds ordered exercises tracking either reps or duration, exactly one, enforced by a DB `CHECK` and surfaced as inline validation in the UI.
 - **Embedded migrations**: Goose migrations run automatically on startup.
@@ -21,11 +22,39 @@ A training log built twice over one Go backend: a documented **JSON REST API** (
 - **Interactive docs**: OpenAPI 3.1 spec served with a Scalar UI at `/docs`.
 - **Tested and linted**: unit, integration and end-to-end tests; `go vet`, `gofmt`, `golangci-lint` and `templ` drift checks enforced in CI.
 
+## Architecture
+
+```text
+        API client ──Authorization: Bearer──┐
+        Browser ──────session cookie─────────┤
+                                             ▼
+                              chi router + middleware
+                RealIP · SecurityHeaders · BodyLimit(1 MiB) · rate-limit
+                                             │
+                          Authenticate (header, else cookie fallback)
+                                             │
+                     ┌───────────────────────┴───────────────────────┐
+                     ▼                                                 ▼
+             internal/api (JSON)                         internal/web (templ + HTMX)
+                     └───────────────────────┬───────────────────────┘
+                                             ▼
+                    stores (interfaces): User · Token · Workout
+                                             │
+                           PostgreSQL (pgx) · Goose migrations
+
+    mail.Mailer (Resend │ log)  ◀── welcome + password-reset emails
+```
+
+Both surfaces share one middleware chain, one `Authenticate` step, and one set of
+store interfaces; only the rendering (JSON vs HTML) and the auth-failure behaviour
+(`401` vs redirect to `/login`) differ.
+
 ## Stack
 
 - **Go 1.25** with [Chi](https://github.com/go-chi/chi) router
 - **PostgreSQL** via [pgx](https://github.com/jackc/pgx), migrations by [Goose](https://github.com/pressly/goose)
 - **Web UI**: [templ](https://templ.guide) typed components + [HTMX](https://htmx.org), hand-written CSS, no build step (assets embedded)
+- **Transactional email** via [Resend](https://resend.com) behind a swappable `Mailer` interface (logs to the console when unconfigured)
 - **Docker Compose** for local dev (app DB + test DB)
 
 ## JSON API
@@ -50,6 +79,7 @@ Interactive docs with a "try it" console live at **http://localhost:8080/docs**.
 Server-rendered pages (cookie session) under `/`:
 
 - `/login`, `/register`, and logout wired to the same auth as the API.
+- `/forgot` and `/reset`: request a reset link and set a new password.
 - `/app` dashboard listing your workouts.
 - `/app/workouts/new` and `/app/workouts/{id}/edit`: forms with add/remove exercise rows (HTMX), reps and duration locked mutually exclusive.
 - `/app/workouts/{id}`: detail with the exercise table, edit and delete.
@@ -68,6 +98,7 @@ Each entry tracks **either reps or duration**, never both and never neither, enf
 - **Input**: every query is parameterized; request bodies are capped at 1 MiB; exercise counts are bounded.
 - **Headers**: `Content-Security-Policy` (no inline scripts), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and HSTS over HTTPS.
 - **Abuse**: credential endpoints are rate-limited per IP; an unknown username on login still runs a bcrypt compare, so response time does not leak whether an account exists.
+- **Password reset**: reset tokens are hashed at rest, single-use, and expire in 1 hour; a successful reset revokes every session for that user. `/forgot` returns the same response whether or not the email is registered, so it never enumerates accounts.
 - **CSRF**: state-changing requests rely on `SameSite=Lax` cookies; the JSON API authenticates with a bearer header, which a browser cannot send cross-site.
 
 In production, point `DATABASE_URL` at a connection string with `sslmode=require` (or `verify-full`) so database traffic is encrypted. The local Docker default uses `sslmode=disable`.
@@ -84,7 +115,8 @@ Then open **http://localhost:8080/register** for the UI, or hit the JSON API dir
 Configuration:
 
 - `DATABASE_URL` overrides the connection string (defaults to the local Docker DB); use `sslmode=require` in production.
-- `-port` sets the listen port (defaults to `8080`).
+- `-port` / `PORT` sets the listen port (defaults to `8080`).
+- `RESEND_API_KEY` + `MAIL_FROM` (e.g. `go-gym <noreply@example.com>`) enable real email via Resend; unset, the app logs emails to the console instead.
 
 Editing `.templ` views requires regenerating the Go (the generated files are committed):
 

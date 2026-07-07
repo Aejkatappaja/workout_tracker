@@ -14,6 +14,7 @@ type Exercise struct {
 type ExerciseStore interface {
 	Search(q string, limit int) ([]Exercise, error)
 	List() ([]Exercise, error)
+	Get(id int) (*Exercise, error)
 }
 
 type PostgresExerciseStore struct {
@@ -41,6 +42,19 @@ func (s *PostgresExerciseStore) Search(q string, limit int) ([]Exercise, error) 
 
 func (s *PostgresExerciseStore) List() ([]Exercise, error) {
 	return s.queryExercises(`SELECT id, name, muscle_group FROM exercises ORDER BY name`)
+}
+
+func (s *PostgresExerciseStore) Get(id int) (*Exercise, error) {
+	var e Exercise
+	err := s.db.QueryRow(`SELECT id, name, muscle_group FROM exercises WHERE id = $1`, id).
+		Scan(&e.ID, &e.Name, &e.MuscleGroup)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &e, nil
 }
 
 func (s *PostgresExerciseStore) queryExercises(query string, args ...interface{}) ([]Exercise, error) {

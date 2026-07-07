@@ -4,6 +4,7 @@ import (
 	crand "crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"math"
 	"math/rand"
 	"time"
 )
@@ -109,7 +110,16 @@ func seedWorkouts(db *sql.DB, userID int) error {
 			if err != nil {
 				return err
 			}
-			if _, err := tx.Exec(insertEntry, workoutID, exerciseID, e.sets, e.reps, e.duration, e.weight, "", i+1); err != nil {
+			// progressive overload: older sessions lighter, recent heavier, plus a
+			// little noise, so the progression charts show a rising curve.
+			weight := e.weight
+			if weight != nil {
+				recent := float64(84-daysAgo) / 84.0
+				mult := 0.72 + 0.40*recent + (rng.Float64()-0.5)*0.06
+				w := math.Round(*weight*mult/2.5) * 2.5
+				weight = &w
+			}
+			if _, err := tx.Exec(insertEntry, workoutID, exerciseID, e.sets, e.reps, e.duration, weight, "", i+1); err != nil {
 				return err
 			}
 		}

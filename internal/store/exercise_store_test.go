@@ -34,12 +34,16 @@ func TestGetOrCreateExerciseViaWorkout(t *testing.T) {
 	es := NewPostgresExerciseStore(db)
 	userID := createTestUser(t, db)
 
+	// exercises persist across runs (not truncated); ensure this one is created fresh
+	_, err := db.Exec(`DELETE FROM exercises WHERE name = 'zercher squat'`)
+	require.NoError(t, err)
+
 	// an unknown exercise name is added to the catalog (lower-cased) on write
-	_, err := ws.CreateWorkout(&Workout{
+	_, err = ws.CreateWorkout(&Workout{
 		UserID:          userID,
 		Title:           "novel",
 		DurationMinutes: 10,
-		Entries:         []WorkoutEntry{{ExerciseName: "Zercher Squat", Sets: 3, Reps: IntPtr(5), OrderIndex: 1}},
+		Entries:         []WorkoutEntry{{ExerciseName: "Zercher Squat", MuscleGroup: "legs", Sets: 3, Reps: IntPtr(5), OrderIndex: 1}},
 	})
 	require.NoError(t, err)
 
@@ -47,6 +51,7 @@ func TestGetOrCreateExerciseViaWorkout(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, "zercher squat", res[0].Name)
+	assert.Equal(t, "legs", res[0].MuscleGroup, "muscle group set on create")
 
 	// reusing the same name (any case) must not create a duplicate
 	_, err = ws.CreateWorkout(&Workout{

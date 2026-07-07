@@ -59,7 +59,7 @@ func insertWorkoutEntries(tx *sql.Tx, workoutID int, entries []WorkoutEntry) err
 	placeholders := make([]string, 0, len(entries))
 	args := make([]interface{}, 0, len(entries)*8)
 	for i := range entries {
-		exerciseID, err := getOrCreateExercise(tx, entries[i].ExerciseName)
+		exerciseID, err := getOrCreateExercise(tx, entries[i].ExerciseName, entries[i].MuscleGroup)
 		if err != nil {
 			return err
 		}
@@ -93,19 +93,29 @@ func insertWorkoutEntries(tx *sql.Tx, workoutID int, entries []WorkoutEntry) err
 	return rows.Err()
 }
 
+var validMuscleGroups = map[string]bool{
+	"chest": true, "back": true, "legs": true, "shoulders": true,
+	"arms": true, "core": true, "cardio": true, "other": true,
+}
+
 // getOrCreateExercise resolves a free-text exercise name to a catalog row,
-// inserting it (lower-cased, trimmed) if new, and returns its id. This keeps
-// workout_entries normalized while letting the API/UI keep sending plain names.
-func getOrCreateExercise(tx *sql.Tx, name string) (int, error) {
+// inserting it (lower-cased, trimmed) if new, and returns its id. muscleGroup is
+// only applied when the row is created; an existing exercise keeps its group.
+// This keeps workout_entries normalized while letting the UI send plain names.
+func getOrCreateExercise(tx *sql.Tx, name, muscleGroup string) (int, error) {
 	n := strings.ToLower(strings.TrimSpace(name))
 	if n == "" {
 		return 0, errors.New("exercise name is required")
 	}
+	group := strings.ToLower(strings.TrimSpace(muscleGroup))
+	if !validMuscleGroups[group] {
+		group = "other"
+	}
 	var id int
 	err := tx.QueryRow(
-		`INSERT INTO exercises (name) VALUES ($1)
+		`INSERT INTO exercises (name, muscle_group) VALUES ($1, $2)
 		 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-		 RETURNING id`, n).Scan(&id)
+		 RETURNING id`, n, group).Scan(&id)
 	return id, err
 }
 

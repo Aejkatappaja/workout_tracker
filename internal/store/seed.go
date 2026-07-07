@@ -105,7 +105,7 @@ func seedWorkouts(db *sql.DB, userID int) error {
 		n := 3 + rng.Intn(3) // 3..5 exercises
 		for i := 0; i < n; i++ {
 			e := pool[rng.Intn(len(pool))]
-			exerciseID, err := getOrCreateExercise(tx, e.name)
+			exerciseID, err := getOrCreateExercise(tx, e.name, "")
 			if err != nil {
 				return err
 			}

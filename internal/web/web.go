@@ -44,12 +44,13 @@ type Handler struct {
 	tokens    store.TokenStore
 	workouts  store.WorkoutStore
 	exercises store.ExerciseStore
+	analytics store.AnalyticsStore
 	logger    *log.Logger
 	mailer    mail.Mailer
 }
 
-func NewHandler(users store.UserStore, tokenStore store.TokenStore, workouts store.WorkoutStore, exercises store.ExerciseStore, logger *log.Logger, mailer mail.Mailer) *Handler {
-	return &Handler{users: users, tokens: tokenStore, workouts: workouts, exercises: exercises, logger: logger, mailer: mailer}
+func NewHandler(users store.UserStore, tokenStore store.TokenStore, workouts store.WorkoutStore, exercises store.ExerciseStore, analytics store.AnalyticsStore, logger *log.Logger, mailer mail.Mailer) *Handler {
+	return &Handler{users: users, tokens: tokenStore, workouts: workouts, exercises: exercises, analytics: analytics, logger: logger, mailer: mailer}
 }
 
 // Static serves the embedded css/js under /static/ with caching headers.

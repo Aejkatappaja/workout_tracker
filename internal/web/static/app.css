@@ -225,6 +225,29 @@
   .stat .n { color: var(--gold); font-size: 22px; font-variant-numeric: tabular-nums; }
   .stat .l { color: var(--comment); font-size: 12px; }
 
+  /* topbar nav link */
+  .nav-link { color: var(--fg-dim); font-size: 12.5px; transition: color var(--t); }
+  .nav-link:hover { color: var(--cyan); }
+
+  /* progress: personal-record cards */
+  .pr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .pr-card { text-decoration: none; }
+  .pr-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .pr-name { color: var(--fg-bright); font-size: 13.5px; font-weight: 500; }
+  .pr-e1rm { color: var(--gold); font-size: 26px; font-variant-numeric: tabular-nums; margin-top: 6px; }
+  .pr-unit { color: var(--comment); font-size: 12px; margin-left: 6px; }
+  .pr-detail { color: var(--fg-dim); font-size: 12px; margin-top: 2px; }
+
+  /* progression line chart (hand-rolled SVG) */
+  .chart { width: 100%; height: auto; }
+  .chart-grid { stroke: var(--border); stroke-width: 1; }
+  .chart-ylabel, .chart-xlabel { fill: var(--comment); font-size: 11px; }
+  .chart-ylabel { text-anchor: end; dominant-baseline: middle; }
+  .chart-xlabel-end { text-anchor: end; }
+  .chart-area { fill: color-mix(in srgb, var(--cyan) 14%, transparent); stroke: none; }
+  .chart-line { fill: none; stroke: var(--cyan); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .chart-dot { fill: var(--bg); stroke: var(--cyan); stroke-width: 2; }
+
   /* buttons */
   .btn {
     display: inline-flex;

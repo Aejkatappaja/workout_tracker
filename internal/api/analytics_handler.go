@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/Aejkatappaja/go-gym/internal/middleware"
@@ -11,11 +10,10 @@ import (
 
 type AnalyticsHandler struct {
 	analytics store.AnalyticsStore
-	logger    *log.Logger
 }
 
-func NewAnalyticsHandler(analytics store.AnalyticsStore, logger *log.Logger) *AnalyticsHandler {
-	return &AnalyticsHandler{analytics: analytics, logger: logger}
+func NewAnalyticsHandler(analytics store.AnalyticsStore) *AnalyticsHandler {
+	return &AnalyticsHandler{analytics: analytics}
 }
 
 // HandleExerciseProgress returns the caller's progression curve for one exercise.
@@ -33,7 +31,7 @@ func (h *AnalyticsHandler) HandleExerciseProgress(w http.ResponseWriter, r *http
 
 	progress, err := h.analytics.ExerciseProgress(user.ID, int(id))
 	if err != nil {
-		h.logger.Printf("ERROR: ExerciseProgress: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("exercise progress", "err", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
 		return
 	}
@@ -50,7 +48,7 @@ func (h *AnalyticsHandler) HandlePersonalRecords(w http.ResponseWriter, r *http.
 
 	records, err := h.analytics.PersonalRecords(user.ID)
 	if err != nil {
-		h.logger.Printf("ERROR: PersonalRecords: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("personal records", "err", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
 		return
 	}

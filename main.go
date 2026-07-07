@@ -39,9 +39,10 @@ func main() {
 	}
 
 	go func() {
-		application.Logger.Printf("listening on port %d", port)
+		application.Logger.Info("listening", "port", port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			application.Logger.Fatalf("server error: %v", err)
+			application.Logger.Error("server error", "err", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -50,10 +51,10 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 
-	application.Logger.Println("shutting down")
+	application.Logger.Info("shutting down")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
-		application.Logger.Printf("graceful shutdown failed: %v", err)
+		application.Logger.Error("graceful shutdown failed", "err", err)
 	}
 }

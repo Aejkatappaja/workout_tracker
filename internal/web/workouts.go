@@ -76,7 +76,7 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 
 	workouts, err := h.workouts.ListWorkoutsByUser(user.ID)
 	if err != nil {
-		h.logger.Printf("ERROR: web dashboard list: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web dashboard list", "err", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -84,7 +84,7 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	since := time.Now().AddDate(0, 0, -activityWeeks*7)
 	counts, err := h.workouts.WorkoutCountsByDay(user.ID, since)
 	if err != nil {
-		h.logger.Printf("ERROR: web dashboard activity: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web dashboard activity", "err", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -120,7 +120,7 @@ func (h *Handler) loadOwnedWorkout(r *http.Request) (*store.Workout, error) {
 func (h *Handler) Detail(w http.ResponseWriter, r *http.Request) {
 	wk, err := h.loadOwnedWorkout(r)
 	if err != nil {
-		h.logger.Printf("ERROR: web detail: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web detail", "err", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -159,7 +159,7 @@ func (h *Handler) ExerciseSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	exercises, err := h.exercises.Search(q, 6)
 	if err != nil {
-		h.logger.Printf("ERROR: web exercise search: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web exercise search", "err", err)
 		h.render(w, r, http.StatusOK, views.ExerciseSuggest(nil, q, false))
 		return
 	}
@@ -191,7 +191,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	created, err := h.workouts.CreateWorkout(&wk)
 	if err != nil {
-		h.logger.Printf("ERROR: web create workout: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web create workout", "err", err)
 		h.render(w, r, http.StatusOK, views.WorkoutForm(user.Username, wk, saveErrMsg(err), "/app/workouts", "vim ~/workouts/new"))
 		return
 	}
@@ -205,7 +205,7 @@ func (h *Handler) EditForm(w http.ResponseWriter, r *http.Request) {
 	}
 	wk, err := h.loadOwnedWorkout(r)
 	if err != nil {
-		h.logger.Printf("ERROR: web edit form: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web edit form", "err", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -225,7 +225,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	id, ok, err := h.checkOwner(r)
 	if err != nil {
-		h.logger.Printf("ERROR: web update lookup: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web update lookup", "err", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -247,7 +247,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.workouts.UpdateWorkout(&wk); err != nil {
-		h.logger.Printf("ERROR: web update workout: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web update workout", "err", err)
 		h.render(w, r, http.StatusOK, views.WorkoutForm(user.Username, wk, saveErrMsg(err), action, heading))
 		return
 	}
@@ -261,7 +261,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	id, ok, err := h.checkOwner(r)
 	if err != nil {
-		h.logger.Printf("ERROR: web delete lookup: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web delete lookup", "err", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -274,7 +274,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 			h.notFound(w, r)
 			return
 		}
-		h.logger.Printf("ERROR: web delete workout: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web delete workout", "err", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}

@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -13,10 +12,6 @@ import (
 	"github.com/Aejkatappaja/go-gym/internal/tokens"
 	"github.com/go-chi/chi/v5"
 )
-
-func discardLogger() *log.Logger {
-	return log.New(io.Discard, "", 0)
-}
 
 // authedRequest builds a request with the chi "id" URL param and the given user
 // injected into the context, mirroring what the router + Authenticate middleware

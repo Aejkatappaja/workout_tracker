@@ -19,7 +19,7 @@ func TestHandleGetWorkoutByID_Authorization(t *testing.T) {
 	fs := newFakeWorkoutStore()
 	fs.workouts[5] = &store.Workout{ID: 5, UserID: owner.ID, Title: "push day"}
 
-	h := NewWorkoutHandler(fs, discardLogger())
+	h := NewWorkoutHandler(fs)
 
 	tests := []struct {
 		name       string
@@ -54,7 +54,7 @@ func TestHandleListWorkouts_OnlyOwn(t *testing.T) {
 	fs.workouts[2] = &store.Workout{ID: 2, UserID: owner.ID, Title: "mine b"}
 	fs.workouts[3] = &store.Workout{ID: 3, UserID: other.ID, Title: "not mine"}
 
-	h := NewWorkoutHandler(fs, discardLogger())
+	h := NewWorkoutHandler(fs)
 
 	req := authedRequest(http.MethodGet, "/workouts", nil, "", owner)
 	rec := httptest.NewRecorder()
@@ -75,7 +75,7 @@ func TestHandleListWorkouts_OnlyOwn(t *testing.T) {
 func TestHandleCreateWorkout_OverridesClientUserID(t *testing.T) {
 	user := &store.User{ID: 7}
 	fs := newFakeWorkoutStore()
-	h := NewWorkoutHandler(fs, discardLogger())
+	h := NewWorkoutHandler(fs)
 
 	// client tries to smuggle a foreign user_id in the body
 	body := `{"title":"leg day","duration_minutes":45,"user_id":999}`
@@ -98,7 +98,7 @@ func TestHandleUpdatedWorkoutByID_Authorization(t *testing.T) {
 	fs := newFakeWorkoutStore()
 	fs.workouts[5] = &store.Workout{ID: 5, UserID: owner.ID, Title: "push day"}
 
-	h := NewWorkoutHandler(fs, discardLogger())
+	h := NewWorkoutHandler(fs)
 
 	// another user cannot update someone else's workout
 	req := authedRequest(http.MethodPut, "/workouts/5", strings.NewReader(`{"title":"hacked"}`), "5", other)
@@ -123,7 +123,7 @@ func TestDeleteWorkout_Authorization(t *testing.T) {
 	fs := newFakeWorkoutStore()
 	fs.workouts[5] = &store.Workout{ID: 5, UserID: owner.ID}
 
-	h := NewWorkoutHandler(fs, discardLogger())
+	h := NewWorkoutHandler(fs)
 
 	// other user forbidden, workout survives
 	req := authedRequest(http.MethodDelete, "/workouts/5", nil, "5", other)

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -21,7 +22,7 @@ func Open() (*sql.DB, error) {
 		return nil, fmt.Errorf("db:open %w", err)
 	}
 
-	fmt.Println("Connected to Database...")
+	slog.Default().Info("connected to database")
 
 	return db, nil
 }

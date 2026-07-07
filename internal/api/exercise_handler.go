@@ -1,20 +1,19 @@
 package api
 
 import (
-	"log"
 	"net/http"
 
+	"github.com/Aejkatappaja/go-gym/internal/middleware"
 	"github.com/Aejkatappaja/go-gym/internal/store"
 	"github.com/Aejkatappaja/go-gym/internal/utils"
 )
 
 type ExerciseHandler struct {
 	exerciseStore store.ExerciseStore
-	logger        *log.Logger
 }
 
-func NewExerciseHandler(exerciseStore store.ExerciseStore, logger *log.Logger) *ExerciseHandler {
-	return &ExerciseHandler{exerciseStore: exerciseStore, logger: logger}
+func NewExerciseHandler(exerciseStore store.ExerciseStore) *ExerciseHandler {
+	return &ExerciseHandler{exerciseStore: exerciseStore}
 }
 
 // HandleSearchExercises returns catalog exercises matching ?q= (prefix), for
@@ -22,7 +21,7 @@ func NewExerciseHandler(exerciseStore store.ExerciseStore, logger *log.Logger) *
 func (h *ExerciseHandler) HandleSearchExercises(w http.ResponseWriter, r *http.Request) {
 	exercises, err := h.exerciseStore.Search(r.URL.Query().Get("q"), 8)
 	if err != nil {
-		h.logger.Printf("ERROR: SearchExercises: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("search exercises", "err", err)
 		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
 		return
 	}

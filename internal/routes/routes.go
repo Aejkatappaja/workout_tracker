@@ -27,7 +27,9 @@ func ipKey(r *http.Request) (string, error) {
 func SetupRoutes(app *app.Application) *chi.Mux {
 	r := chi.NewRouter()
 
-	r.Use(chimw.RealIP, chimw.Recoverer)
+	r.Use(chimw.RealIP, chimw.RequestID)
+	r.Use(middleware.RequestLogger(app.Logger))
+	r.Use(chimw.Recoverer)
 	r.Use(middleware.SecurityHeaders)
 	r.Use(middleware.BodyLimit(1 << 20)) // 1 MiB
 

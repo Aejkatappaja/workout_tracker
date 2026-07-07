@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -41,10 +42,10 @@ func baseURL(r *http.Request) string {
 
 // sendMail renders the HTML body once, then delivers in the background so the
 // HTTP response is never blocked on the mail provider. Failures are logged.
-func (h *Handler) sendMail(to, subject string, body templ.Component, text string) {
+func (h *Handler) sendMail(log *slog.Logger, to, subject string, body templ.Component, text string) {
 	var sb strings.Builder
 	if err := body.Render(context.Background(), &sb); err != nil {
-		h.logger.Printf("ERROR: render email to %s: %v", to, err)
+		log.Error("render email", "to", to, "err", err)
 		return
 	}
 	html := sb.String()
@@ -52,7 +53,7 @@ func (h *Handler) sendMail(to, subject string, body templ.Component, text string
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		if err := h.mailer.Send(ctx, to, subject, html, text); err != nil {
-			h.logger.Printf("ERROR: send email to %s: %v", to, err)
+			log.Error("send email", "to", to, "err", err)
 		}
 	}()
 }
@@ -95,12 +96,12 @@ func (h *Handler) LoginPage(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DemoLogin(w http.ResponseWriter, r *http.Request) {
 	demo, err := h.users.GetUserByUsername(store.DemoUsername)
 	if err != nil || demo == nil {
-		h.logger.Printf("ERROR: demo login lookup: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("demo login lookup", "err", err)
 		h.render(w, r, http.StatusServiceUnavailable, views.LoginPage("the demo is unavailable right now"))
 		return
 	}
 	if err := h.setSession(w, r, demo.ID); err != nil {
-		h.logger.Printf("ERROR: demo session: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("demo session", "err", err)
 		h.render(w, r, http.StatusInternalServerError, views.LoginPage("something went wrong, try again"))
 		return
 	}
@@ -110,7 +111,7 @@ func (h *Handler) DemoLogin(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	user, err := h.users.GetUserByUsername(r.FormValue("username"))
 	if err != nil {
-		h.logger.Printf("ERROR: web login lookup: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web login lookup", "err", err)
 		h.render(w, r, http.StatusInternalServerError, views.LoginPage("something went wrong, try again"))
 		return
 	}
@@ -123,7 +124,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	ok, err := user.PasswordHash.Matches(r.FormValue("password"))
 	if err != nil {
-		h.logger.Printf("ERROR: web login hash: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web login hash", "err", err)
 		h.render(w, r, http.StatusInternalServerError, views.LoginPage("something went wrong, try again"))
 		return
 	}
@@ -133,7 +134,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.setSession(w, r, user.ID); err != nil {
-		h.logger.Printf("ERROR: web login session: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web login session", "err", err)
 		h.render(w, r, http.StatusInternalServerError, views.LoginPage("something went wrong, try again"))
 		return
 	}
@@ -160,7 +161,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	user := &store.User{Username: username, Email: email}
 	if err := user.PasswordHash.Set(password); err != nil {
-		h.logger.Printf("ERROR: web register hash: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web register hash", "err", err)
 		h.render(w, r, http.StatusInternalServerError, views.RegisterPage("something went wrong, try again"))
 		return
 	}
@@ -171,19 +172,19 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 			h.render(w, r, http.StatusConflict, views.RegisterPage("username or email already taken"))
 			return
 		}
-		h.logger.Printf("ERROR: web register create: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web register create", "err", err)
 		h.render(w, r, http.StatusInternalServerError, views.RegisterPage("something went wrong, try again"))
 		return
 	}
 
 	if err := h.setSession(w, r, user.ID); err != nil {
-		h.logger.Printf("ERROR: web register session: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("web register session", "err", err)
 		h.render(w, r, http.StatusInternalServerError, views.RegisterPage("something went wrong, try again"))
 		return
 	}
 
 	appURL := baseURL(r) + "/app"
-	h.sendMail(user.Email, "welcome to go-gym", views.WelcomeEmail(user.Username, appURL), welcomeText(user.Username, appURL))
+	h.sendMail(middleware.LoggerFrom(r.Context()), user.Email, "welcome to go-gym", views.WelcomeEmail(user.Username, appURL), welcomeText(user.Username, appURL))
 
 	http.Redirect(w, r, "/app", http.StatusSeeOther)
 }
@@ -204,16 +205,16 @@ func (h *Handler) Forgot(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.users.GetUserByEmail(email)
 	if err != nil {
-		h.logger.Printf("ERROR: forgot lookup: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("forgot lookup", "err", err)
 	}
 	// Skip the seeded demo account; otherwise send a 1-hour, single-use link.
 	if user != nil && user.Username != store.DemoUsername {
 		tok, terr := h.tokens.CreateNewToken(user.ID, time.Hour, tokens.ScopePasswordReset)
 		if terr != nil {
-			h.logger.Printf("ERROR: forgot token: %v", terr)
+			middleware.LoggerFrom(r.Context()).Error("forgot token", "err", terr)
 		} else {
 			resetURL := baseURL(r) + "/reset?token=" + url.QueryEscape(tok.PlainText)
-			h.sendMail(user.Email, "reset your go-gym password", views.ResetEmail(resetURL), resetText(resetURL))
+			h.sendMail(middleware.LoggerFrom(r.Context()), user.Email, "reset your go-gym password", views.ResetEmail(resetURL), resetText(resetURL))
 		}
 	}
 
@@ -247,7 +248,7 @@ func (h *Handler) Reset(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.users.GetUserToken(tokens.ScopePasswordReset, token)
 	if err != nil {
-		h.logger.Printf("ERROR: reset token lookup: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("reset token lookup", "err", err)
 		h.render(w, r, http.StatusInternalServerError, views.ResetPage(token, "something went wrong, try again"))
 		return
 	}
@@ -257,7 +258,7 @@ func (h *Handler) Reset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.users.UpdateUserPassword(user.ID, password); err != nil {
-		h.logger.Printf("ERROR: reset update password: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("reset update password", "err", err)
 		h.render(w, r, http.StatusInternalServerError, views.ResetPage(token, "something went wrong, try again"))
 		return
 	}
@@ -265,10 +266,10 @@ func (h *Handler) Reset(w http.ResponseWriter, r *http.Request) {
 	// single-use: drop the reset token(s), and revoke existing sessions so a
 	// leaked cookie can't outlive the password change.
 	if err := h.tokens.DeleteAllTokensForUser(user.ID, tokens.ScopePasswordReset); err != nil {
-		h.logger.Printf("ERROR: reset revoke reset tokens: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("reset revoke reset tokens", "err", err)
 	}
 	if err := h.tokens.DeleteAllTokensForUser(user.ID, tokens.ScopeAuth); err != nil {
-		h.logger.Printf("ERROR: reset revoke sessions: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("reset revoke sessions", "err", err)
 	}
 
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -277,7 +278,7 @@ func (h *Handler) Reset(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	if user := middleware.GetUser(r); !user.IsAnonymous() {
 		if err := h.tokens.DeleteAllTokensForUser(user.ID, tokens.ScopeAuth); err != nil {
-			h.logger.Printf("ERROR: web logout revoke: %v", err)
+			middleware.LoggerFrom(r.Context()).Error("web logout revoke", "err", err)
 		}
 	}
 	http.SetCookie(w, &http.Cookie{

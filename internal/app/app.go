@@ -4,9 +4,10 @@ package app
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/Aejkatappaja/go-gym/internal/api"
 	"github.com/Aejkatappaja/go-gym/internal/mail"
@@ -17,7 +18,7 @@ import (
 )
 
 type Application struct {
-	Logger           *log.Logger
+	Logger           *slog.Logger
 	WorkoutHandler   *api.WorkoutHandler
 	UserHandler      *api.UserHandler
 	TokenHandler     *api.TokenHandler
@@ -29,6 +30,8 @@ type Application struct {
 }
 
 func NewApplication() (*Application, error) {
+	logger := newLogger()
+
 	pgDB, err := store.Open()
 	if err != nil {
 		return nil, err
@@ -39,10 +42,8 @@ func NewApplication() (*Application, error) {
 		panic(err)
 	}
 
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-
 	if err := store.SeedDemo(pgDB); err != nil {
-		logger.Printf("WARN: seeding demo account: %v", err)
+		logger.Warn("seeding demo account", "err", err)
 	}
 
 	workoutStore := store.NewPostgresWorkoutStore(pgDB)
@@ -53,13 +54,13 @@ func NewApplication() (*Application, error) {
 
 	mailer := mail.New(logger, os.Getenv("RESEND_API_KEY"), os.Getenv("MAIL_FROM"))
 
-	workoutHandler := api.NewWorkoutHandler(workoutStore, logger)
-	userHandler := api.NewUserHandler(userStore, logger)
-	tokenHandler := api.NewTokenHandler(tokenStore, userStore, logger)
-	exerciseHandler := api.NewExerciseHandler(exerciseStore, logger)
-	analyticsHandler := api.NewAnalyticsHandler(analyticsStore, logger)
+	workoutHandler := api.NewWorkoutHandler(workoutStore)
+	userHandler := api.NewUserHandler(userStore)
+	tokenHandler := api.NewTokenHandler(tokenStore, userStore)
+	exerciseHandler := api.NewExerciseHandler(exerciseStore)
+	analyticsHandler := api.NewAnalyticsHandler(analyticsStore)
 	middlewareHandler := middleware.UserMiddleware{UserStore: userStore}
-	webHandler := web.NewHandler(userStore, tokenStore, workoutStore, exerciseStore, analyticsStore, logger, mailer)
+	webHandler := web.NewHandler(userStore, tokenStore, workoutStore, exerciseStore, analyticsStore, mailer)
 
 	app := &Application{
 		Logger:           logger,
@@ -78,10 +79,36 @@ func NewApplication() (*Application, error) {
 
 func (a *Application) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	if err := a.DB.PingContext(r.Context()); err != nil {
-		a.Logger.Printf("ERROR: health check DB ping: %v", err)
+		middleware.LoggerFrom(r.Context()).Error("health check DB ping", "err", err)
 		w.WriteHeader(http.StatusServiceUnavailable)
 		_, _ = fmt.Fprint(w, "database unavailable\n")
 		return
 	}
 	_, _ = fmt.Fprint(w, "Status is available!\n")
+}
+
+// newLogger builds the process logger. LOG_FORMAT=json selects JSON output (for
+// production log aggregation), otherwise human-readable text. LOG_LEVEL sets the
+// minimum level (debug|info|warn|error, default info). It is also installed as the
+// slog default so code without a request-scoped logger still logs consistently.
+func newLogger() *slog.Logger {
+	level := slog.LevelInfo
+	switch strings.ToLower(os.Getenv("LOG_LEVEL")) {
+	case "debug":
+		level = slog.LevelDebug
+	case "warn":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	}
+
+	opts := &slog.HandlerOptions{Level: level}
+	var h slog.Handler = slog.NewTextHandler(os.Stdout, opts)
+	if strings.EqualFold(os.Getenv("LOG_FORMAT"), "json") {
+		h = slog.NewJSONHandler(os.Stdout, opts)
+	}
+
+	logger := slog.New(h)
+	slog.SetDefault(logger)
+	return logger
 }

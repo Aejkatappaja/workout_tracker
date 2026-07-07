@@ -2,8 +2,6 @@ package web
 
 import (
 	"context"
-	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -58,7 +56,7 @@ func (f *fakeWorkoutStore) ListWorkoutsByUser(userID int) ([]store.Workout, erro
 }
 
 func handlerWith(ws store.WorkoutStore) *Handler {
-	return NewHandler(nil, nil, ws, nil, nil, log.New(io.Discard, "", 0), nil)
+	return NewHandler(nil, nil, ws, nil, nil, nil)
 }
 
 // webReq builds a request with an optional form body, chi {id} param and user context.

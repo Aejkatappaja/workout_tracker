@@ -44,6 +44,9 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Put("/workouts/{id}", app.MiddleWare.RequireUser(app.WorkoutHandler.HandleUpdatedWorkoutByID))
 		r.Delete("/workouts/{id}", app.MiddleWare.RequireUser(app.WorkoutHandler.DeleteWorkout))
 
+		r.Get("/exercises/{id}/progress", app.MiddleWare.RequireUser(app.AnalyticsHandler.HandleExerciseProgress))
+		r.Get("/records", app.MiddleWare.RequireUser(app.AnalyticsHandler.HandlePersonalRecords))
+
 		// web routes that need the authenticated user in context
 		r.Post("/logout", app.WebHandler.Logout)
 

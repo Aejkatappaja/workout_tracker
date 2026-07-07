@@ -76,16 +76,14 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 
 	workouts, err := h.workouts.ListWorkoutsByUser(user.ID)
 	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("web dashboard list", "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		h.serverError(w, r, "web dashboard list", err)
 		return
 	}
 
 	since := time.Now().AddDate(0, 0, -activityWeeks*7)
 	counts, err := h.workouts.WorkoutCountsByDay(user.ID, since)
 	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("web dashboard activity", "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		h.serverError(w, r, "web dashboard activity", err)
 		return
 	}
 
@@ -120,8 +118,7 @@ func (h *Handler) loadOwnedWorkout(r *http.Request) (*store.Workout, error) {
 func (h *Handler) Detail(w http.ResponseWriter, r *http.Request) {
 	wk, err := h.loadOwnedWorkout(r)
 	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("web detail", "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		h.serverError(w, r, "web detail", err)
 		return
 	}
 	if wk == nil {
@@ -205,8 +202,7 @@ func (h *Handler) EditForm(w http.ResponseWriter, r *http.Request) {
 	}
 	wk, err := h.loadOwnedWorkout(r)
 	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("web edit form", "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		h.serverError(w, r, "web edit form", err)
 		return
 	}
 	if wk == nil {
@@ -225,8 +221,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	id, ok, err := h.checkOwner(r)
 	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("web update lookup", "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		h.serverError(w, r, "web update lookup", err)
 		return
 	}
 	if !ok {
@@ -261,8 +256,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	id, ok, err := h.checkOwner(r)
 	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("web delete lookup", "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		h.serverError(w, r, "web delete lookup", err)
 		return
 	}
 	if !ok {
@@ -274,8 +268,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 			h.notFound(w, r)
 			return
 		}
-		middleware.LoggerFrom(r.Context()).Error("web delete workout", "err", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		h.serverError(w, r, "web delete workout", err)
 		return
 	}
 	w.Header().Set("HX-Redirect", "/app")

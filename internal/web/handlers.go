@@ -27,7 +27,16 @@ func secureRequest(r *http.Request) bool {
 func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, c templ.Component) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
-	_ = c.Render(r.Context(), w)
+	if err := c.Render(r.Context(), w); err != nil {
+		middleware.LoggerFrom(r.Context()).Error("render template", "err", err)
+	}
+}
+
+// serverError logs the cause and renders a styled 500 page, so internal failures
+// stay inside the HTML shell instead of leaking as raw text.
+func (h *Handler) serverError(w http.ResponseWriter, r *http.Request, op string, err error) {
+	middleware.LoggerFrom(r.Context()).Error(op, "err", err)
+	h.render(w, r, http.StatusInternalServerError, views.ErrorPage("something went wrong, please try again"))
 }
 
 // baseURL reconstructs the site's absolute origin from the request, so email

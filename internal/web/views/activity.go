@@ -32,9 +32,9 @@ func BuildActivity(counts map[string]int, weeks int, today time.Time) Activity {
 
 	grid := make([][]ActivityDay, 0, weeks)
 	total := 0
-	for w := 0; w < weeks; w++ {
+	for w := range weeks {
 		col := make([]ActivityDay, 7)
-		for d := 0; d < 7; d++ {
+		for d := range 7 {
 			day := start.AddDate(0, 0, w*7+d)
 			key := utils.DayKey(day)
 			c := counts[key]

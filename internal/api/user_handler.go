@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/Aejkatappaja/go-gym/internal/middleware"
 	"github.com/Aejkatappaja/go-gym/internal/store"
 	"github.com/Aejkatappaja/go-gym/internal/utils"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -57,16 +56,13 @@ func (h *UserHandler) validateRegisterRequest(req *registerUserRequest) error {
 
 func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req registerUserRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("decode register request", "err", err)
-		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request payload"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		clientError(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
 
-	err = h.validateRegisterRequest(&req)
-	if err != nil {
-		utils.WriteJSON(w, http.StatusBadRequest, utils.Envelope{"error": err.Error()})
+	if err := h.validateRegisterRequest(&req); err != nil {
+		clientError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -78,22 +74,18 @@ func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 		user.Bio = req.Bio
 	}
 
-	err = user.PasswordHash.Set(req.Password)
-	if err != nil {
-		middleware.LoggerFrom(r.Context()).Error("hash password", "err", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+	if err := user.PasswordHash.Set(req.Password); err != nil {
+		serverError(w, r, "hash password", err)
 		return
 	}
 
-	err = h.userStore.CreateUser(user)
-	if err != nil {
+	if err := h.userStore.CreateUser(user); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			utils.WriteJSON(w, http.StatusConflict, utils.Envelope{"error": "username or email already taken"})
+			clientError(w, http.StatusConflict, "username or email already taken")
 			return
 		}
-		middleware.LoggerFrom(r.Context()).Error("register user", "err", err)
-		utils.WriteJSON(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		serverError(w, r, "register user", err)
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, utils.Envelope{"user": user})

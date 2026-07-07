@@ -82,7 +82,7 @@ func seedWorkouts(db *sql.DB, userID int) error {
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
 	now := time.Now()
-	for daysAgo := 0; daysAgo < 84; daysAgo++ {
+	for daysAgo := range 84 {
 		// train roughly 4 days a week
 		if rng.Float64() > 0.55 {
 			continue
@@ -104,7 +104,7 @@ func seedWorkouts(db *sql.DB, userID int) error {
 		}
 
 		n := 3 + rng.Intn(3) // 3..5 exercises
-		for i := 0; i < n; i++ {
+		for i := range n {
 			e := pool[rng.Intn(len(pool))]
 			exerciseID, err := getOrCreateExercise(tx, e.name, "")
 			if err != nil {

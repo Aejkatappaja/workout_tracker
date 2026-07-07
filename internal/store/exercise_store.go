@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"strings"
 )
 
@@ -48,7 +49,7 @@ func (s *PostgresExerciseStore) Get(id int) (*Exercise, error) {
 	var e Exercise
 	err := s.db.QueryRow(`SELECT id, name, muscle_group FROM exercises WHERE id = $1`, id).
 		Scan(&e.ID, &e.Name, &e.MuscleGroup)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -57,7 +58,7 @@ func (s *PostgresExerciseStore) Get(id int) (*Exercise, error) {
 	return &e, nil
 }
 
-func (s *PostgresExerciseStore) queryExercises(query string, args ...interface{}) ([]Exercise, error) {
+func (s *PostgresExerciseStore) queryExercises(query string, args ...any) ([]Exercise, error) {
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
 		return nil, err

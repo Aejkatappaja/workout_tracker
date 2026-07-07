@@ -1,0 +1,15 @@
+package views
+
+// ErrorPage is the fallback shown when a request fails server-side, so a 500
+// still lands inside the styled shell instead of raw text.
+templ ErrorPage(message string) {
+	@Layout("error") {
+		<div class="auth">
+			<div class="sec-head">
+				<h1 class="title"><span class="p">$</span> error</h1>
+			</div>
+			<p class="muted">{ message }</p>
+			<a class="nav-link" href="/app">❮ back to dashboard</a>
+		</div>
+	}
+}

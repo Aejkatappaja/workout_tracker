@@ -17,7 +17,6 @@ type fakeUserStore struct {
 
 func (f *fakeUserStore) CreateUser(*store.User) error                  { return nil }
 func (f *fakeUserStore) GetUserByUsername(string) (*store.User, error) { return nil, nil }
-func (f *fakeUserStore) UpdateUser(*store.User) error                  { return nil }
 func (f *fakeUserStore) GetUserByEmail(string) (*store.User, error)    { return nil, nil }
 func (f *fakeUserStore) UpdateUserPassword(int, string) error          { return nil }
 func (f *fakeUserStore) GetUserToken(scope, tokenPlainText string) (*store.User, error) {

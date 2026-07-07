@@ -10,8 +10,7 @@ import (
 )
 
 type password struct {
-	plainText *string
-	hash      []byte
+	hash []byte
 }
 
 // dummyPasswordHash lets login spend a bcrypt comparison even when the user is
@@ -30,7 +29,6 @@ func (p *password) Set(plaintextPassword string) error {
 		return err
 	}
 
-	p.plainText = &plaintextPassword
 	p.hash = hash
 	return nil
 }
@@ -78,7 +76,6 @@ type UserStore interface {
 	CreateUser(*User) error
 	GetUserByUsername(username string) (*User, error)
 	GetUserByEmail(email string) (*User, error)
-	UpdateUser(*User) error
 	UpdateUserPassword(userID int, plaintextPassword string) error
 	GetUserToken(scope, tokenPlainText string) (*User, error)
 }
@@ -116,7 +113,7 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 		&user.UpdatedAt,
 	)
 
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -145,7 +142,7 @@ func (s *PostgresUserStore) GetUserByEmail(email string) (*User, error) {
 		&user.UpdatedAt,
 	)
 
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 
@@ -168,30 +165,6 @@ func (s *PostgresUserStore) UpdateUserPassword(userID int, plaintextPassword str
 	WHERE id = $2
 	`
 	result, err := s.db.Exec(query, hash, userID)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return sql.ErrNoRows
-	}
-
-	return nil
-}
-
-func (s *PostgresUserStore) UpdateUser(user *User) error {
-	query := `
-	UPDATE users
-	SET username = $1, email = $2, bio = $3, updated_at = CURRENT_TIMESTAMP
-	WHERE id = $4
-	RETURNING updated_at
-	`
-	result, err := s.db.Exec(query, user.Username, user.Email, user.Bio, user.ID)
 	if err != nil {
 		return err
 	}
@@ -232,7 +205,7 @@ func (s *PostgresUserStore) GetUserToken(scope, plaintextPassword string) (*User
 		&user.UpdatedAt,
 	)
 
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

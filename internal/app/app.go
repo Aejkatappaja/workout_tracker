@@ -11,6 +11,7 @@ import (
 
 	"github.com/Aejkatappaja/go-gym/internal/api"
 	"github.com/Aejkatappaja/go-gym/internal/mail"
+	"github.com/Aejkatappaja/go-gym/internal/metrics"
 	"github.com/Aejkatappaja/go-gym/internal/middleware"
 	"github.com/Aejkatappaja/go-gym/internal/recap"
 	"github.com/Aejkatappaja/go-gym/internal/store"
@@ -28,6 +29,7 @@ type Application struct {
 	MiddleWare       middleware.UserMiddleware
 	WebHandler       *web.Handler
 	Recap            *recap.Service // nil when recap email is not configured
+	Metrics          *metrics.Metrics
 	DB               *sql.DB
 }
 
@@ -85,6 +87,7 @@ func NewApplication() (*Application, error) {
 		MiddleWare:       middlewareHandler,
 		WebHandler:       webHandler,
 		Recap:            recapSvc,
+		Metrics:          metrics.New(),
 		DB:               pgDB,
 	}
 

@@ -12,6 +12,11 @@ database/
 *.test
 *.out
 go.work
+go.work.sum
+
+# local-only swapbook workbench (dev-only, never shipped)
+internal/routes/swapbook.go
+internal/web/views/swapbook_stories.go
 
 # OS
 .DS_Store

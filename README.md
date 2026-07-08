@@ -145,9 +145,11 @@ Bounding the pool (`SetMaxOpenConns(25)` + idle/lifetime, in [`internal/store/da
 | `GET /app`, c=150, 15s | Before (unbounded) | After (pool = 25) |
 |---|---|---|
 | Failed requests | **321** (`too many clients`) | **0** |
-| Throughput | collapses (fail-fast + stalls) | **~9,900 req/s** |
-| Worst latency | **13.5 s** | **76 ms** |
-| p95 / p99 | — | **18 ms / 25 ms** |
+| p95 latency | requests erroring out | **32 ms** |
+| p99 latency | | **92 ms** |
+| Throughput | | **~8,400 req/s** |
+
+(Before the fix the worst request sat at 13.5s before giving up; the "after" column is a single c=150 run so it compares the one change. Numbers are `hey` on a laptop against local Postgres, so treat them as relative, not absolute.)
 
 Reproduce with [`scripts/loadtest.sh`](scripts/loadtest.sh) (needs `hey` and a running server).
 

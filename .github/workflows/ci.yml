@@ -32,6 +32,12 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # eager resolve of the full module graph, mirroring the Docker build's
+      # `go mod download`; catches an unresolvable require/replace that the lazy
+      # `go build ./...` would miss.
+      - name: Download modules
+        run: go mod download
+
       - name: Check formatting
         run: |
           unformatted=$(gofmt -l .)

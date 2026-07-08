@@ -2,11 +2,7 @@ module github.com/Aejkatappaja/go-gym
 
 go 1.26.0
 
-// swapbook: local dev-only component workbench, never committed.
-replace github.com/Aejkatappaja/swapbook => ../swapbook
-
 require (
-	github.com/Aejkatappaja/swapbook v0.0.0-00010101000000-000000000000
 	github.com/a-h/templ v0.3.1020
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-chi/httprate v0.16.0

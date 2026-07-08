@@ -29,6 +29,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 
 	r.Use(chimw.RealIP, chimw.RequestID)
 	r.Use(middleware.RequestLogger(app.Logger))
+	r.Use(app.Metrics.Middleware)
 	r.Use(chimw.Recoverer)
 	r.Use(middleware.SecurityHeaders)
 	r.Use(middleware.BodyLimit(1 << 20)) // 1 MiB
@@ -69,6 +70,10 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 	})
 
 	r.Get("/health", app.HealthCheck)
+
+	// Prometheus exposition. Public in this demo; behind an internal network or
+	// auth in a real deployment.
+	r.Handle("/metrics", app.Metrics.Handler())
 
 	r.Get("/docs", docs.UI)
 	r.Get("/openapi.yaml", docs.Spec)

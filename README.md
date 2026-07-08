@@ -37,7 +37,7 @@ A training log built twice over one Go backend: a documented **JSON REST API** (
         Browser ──────session cookie─────────┤
                                              ▼
                               chi router + middleware
-      RealIP · RequestID · request-log(slog) · Recoverer · SecurityHeaders · BodyLimit · rate-limit
+      RealIP · RequestID · request-log(slog) · metrics · Recoverer · SecurityHeaders · BodyLimit · rate-limit
                                              │
                           Authenticate (header, else cookie fallback)
                                              │
@@ -83,6 +83,7 @@ stores and mailer to send weekly recaps.
 | `GET` | `/exercises/{id}/progress` | Bearer | e1RM + volume progression for one exercise |
 | `GET` | `/exercises` | Public | Prefix search the exercise catalog (typeahead) |
 | `GET` | `/health` | Public | Health check |
+| `GET` | `/metrics` | Public | Prometheus metrics (RED + Go runtime) |
 | `GET` | `/docs` | Public | Interactive API docs (Scalar) |
 | `GET` | `/openapi.yaml` | Public | OpenAPI 3.1 spec |
 
@@ -128,6 +129,8 @@ In production, point `DATABASE_URL` at a connection string with `sslmode=require
 ```json
 {"time":"...","level":"INFO","msg":"request","req_id":"…","method":"POST","path":"/app/workouts","status":200,"bytes":0,"duration_ms":21.3}
 ```
+
+**Metrics**: `GET /metrics` exposes Prometheus RED metrics (`http_requests_total`, `http_request_duration_seconds`) plus the Go runtime and process collectors. Requests are labeled by the **chi route pattern** (`/app/workouts/{id}`), not the raw path, so ids don't blow up cardinality and unmatched paths (404s, scanners) collapse to `other`. The endpoint is public in this demo; in a real deployment you'd bind it to an internal network or put it behind auth. Point Prometheus (or Grafana Cloud) at it to graph request rate, error rate and p95 latency.
 
 ## Run
 

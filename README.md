@@ -132,6 +132,25 @@ In production, point `DATABASE_URL` at a connection string with `sslmode=require
 
 **Metrics**: `GET /metrics` exposes Prometheus RED metrics (`http_requests_total`, `http_request_duration_seconds`) plus the Go runtime and process collectors. Requests are labeled by the **chi route pattern** (`/app/workouts/{id}`), not the raw path, so ids don't blow up cardinality and unmatched paths (404s, scanners) collapse to `other`. The endpoint is public in this demo; in a real deployment you'd bind it to an internal network or put it behind auth. Point Prometheus (or Grafana Cloud) at it to graph request rate, error rate and p95 latency.
 
+## Load test
+
+Load testing the dashboard (`GET /app`, the heaviest read: an aggregate stats query, a page of workouts and the heatmap counts) with [`hey`](https://github.com/rakyll/hey) at concurrency 150 surfaced a real bottleneck. The connection pool used the `database/sql` default (unlimited open connections), so under load it opened one Postgres backend per in-flight query and hit the server's `max_connections` (100):
+
+```
+FATAL: sorry, too many clients already (SQLSTATE 53300)
+```
+
+Bounding the pool (`SetMaxOpenConns(25)` + idle/lifetime, in [`internal/store/database.go`](internal/store/database.go)) makes requests queue on the pool instead of exhausting the server:
+
+| `GET /app`, c=150, 15s | Before (unbounded) | After (pool = 25) |
+|---|---|---|
+| Failed requests | **321** (`too many clients`) | **0** |
+| Throughput | collapses (fail-fast + stalls) | **~9,900 req/s** |
+| Worst latency | **13.5 s** | **76 ms** |
+| p95 / p99 | — | **18 ms / 25 ms** |
+
+Reproduce with [`scripts/loadtest.sh`](scripts/loadtest.sh) (needs `hey` and a running server).
+
 ## Run
 
 ```bash
